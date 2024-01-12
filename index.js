@@ -1,8 +1,8 @@
-// Because this is a module, we can use import syntax
+// Because this is a module script, we can import code from other modules
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules
 import * as THREE from "three";
 
-// create a scene in which all other objects will exist
+// create a scene container in which all other objects will exist
 let scene = new THREE.Scene();
 
 // create a camera and position it in space
@@ -18,10 +18,10 @@ document.body.appendChild(renderer.domElement);
 // create a sphere
 let geometry = new THREE.SphereGeometry(1, 12, 12);
 let material = new THREE.MeshBasicMaterial({ color: "blue" });
-let my3DObject = new THREE.Mesh(geometry, material);
+let myMesh = new THREE.Mesh(geometry, material);
 
-// and add it to the scene
-scene.add(my3DObject);
+// and add it to the scene container
+scene.add(myMesh);
 
 // finally, take a picture of the scene and show it in the <canvas>
 renderer.render(scene, camera);
