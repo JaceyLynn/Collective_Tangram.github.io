@@ -21,12 +21,24 @@ let material = new THREE.MeshBasicMaterial({ color: "blue" });
 let myMesh = new THREE.Mesh(geometry, material);
 
 // and add it to the scene container
-scene.add(myMesh);
+// scene.add(myMesh);
+
+// what else can we do?
+// try placing objects with a for-loop
+for (let i = -3; i <= 3; i++) {
+  for (let j = -3; j <= 3; j++) {
+    let geo = new THREE.SphereGeometry(0.1, 12, 12);
+    let mat = new THREE.MeshBasicMaterial({ color: "blue" });
+    let mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(j, i, 0);
+    scene.add(mesh);
+    console.log(i * 5);
+  }
+}
+
+// try changing the background color (or add an image)
+
+//
 
 // finally, take a picture of the scene and show it in the <canvas>
 renderer.render(scene, camera);
-
-// what else can we do?
-// create many objects with a for-loop
-// add movement (how do we have things change over time)
-// change camera types / parameters
