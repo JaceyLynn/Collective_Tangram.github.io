@@ -14,12 +14,20 @@ document.body.appendChild(renderer.domElement);
 scene.background = new THREE.Color(1,0,0.2);
 
 const geometry = new THREE.TorusKnotGeometry( 2, 0.5, 100, 16 );
-const material = new THREE.MeshPhongMaterial(); 
+
+let randomColor = new THREE.Color(Math.random(),Math.random(),Math.random());
+
+const material = new THREE.MeshPhongMaterial({color: randomColor}); 
 const sphere = new THREE.Mesh( geometry, material ); 
 scene.add( sphere );
 
 
-let myLight = new THREE.AmbientLight('0xff')
+let myLight = new THREE.AmbientLight('0xffffff');
+scene.add(myLight);
+
+// White directional light at half intensity shining from the top.
+const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.95 );
+scene.add( directionalLight );
 
 
 renderer.render(scene, camera);
