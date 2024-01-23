@@ -1,15 +1,24 @@
 import * as THREE from "three";
 
+let scene = new THREE.Scene();
 
-console.log(THREE);
-
-
-let scene = new THREE.Scene()
-
-
+let aspect = window.innerWidth / window.innerHeight;
+let camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+camera.position.z = -8; // place the camera in space
 
 
+let renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
+scene.background = new THREE.Color('#f35592');
+
+const geometry = new THREE.SphereGeometry( 15, 32, 16 ); 
+const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } ); 
+const sphere = new THREE.Mesh( geometry, material ); 
+scene.add( sphere );
+
+renderer.render(scene, camera);
 
 
 
