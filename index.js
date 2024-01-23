@@ -11,13 +11,15 @@ let renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-scene.background = new THREE.Color('#f35592');
+scene.background = new THREE.Color(1,0,0.2);
 
 const geometry = new THREE.TorusKnotGeometry( 2, 0.5, 100, 16 );
-const material = new THREE.MeshNormalMaterial(); 
+const material = new THREE.MeshPhongMaterial(); 
 const sphere = new THREE.Mesh( geometry, material ); 
 scene.add( sphere );
 
+
+let myLight = new THREE.AmbientLight('0xff')
 
 
 renderer.render(scene, camera);
