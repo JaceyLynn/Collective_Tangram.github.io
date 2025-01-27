@@ -3,7 +3,7 @@
 // how to use browser console on glitch.com
 
 // what is 'new' keyword and how does it allow us to create new instances of a class
-
+// x, y, z positions - what is euclidean space / cartesian coordinates
 
 
 import * as THREE from "three";
@@ -15,21 +15,28 @@ import * as THREE from "three";
 
 
 let scene = new THREE.Scene();
-scene.background = new THREE.Color("rgb(255,0,255)")
+scene.background = new THREE.Color("rgb(255,200,255)")
 
 let renderer = new THREE.WebGLRenderer();
-renderer.setSize(400,400);
+renderer.setSize(800,800);
 document.body.appendChild(renderer.domElement);
 
 
-let camera = new THREE.PerspectiveCamera(50,1,0.1,1000);
-camera.position.set(10,10,10)
+let camera = new THREE.PerspectiveCamera(75,1,0.1,1000);
+camera.position.set(0,0,-10)
 camera.lookAt(0,0,0);
 
-let geometry = new THREE.BoxGeometry(1,1,1);
-let mat = new THREE.MeshNormalMaterial();
-let mesh = new THREE.Mesh(geometry,mat);
-scene.add(mesh);
+
+
+for (let i = 0; i < 10; i++){
+  for (let j = 0; j < 10; j++){
+  let geometry = new THREE.BoxGeometry(0.5,0.5,0.5);
+  let mat = new THREE.MeshNormalMaterial();
+  let mesh = new THREE.Mesh(geometry,mat);
+  scene.add(mesh);
+  mesh.position.set(i-5,j-5,)
+    }
+}
 
 renderer.render(scene,camera);
 
