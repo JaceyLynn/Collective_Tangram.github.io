@@ -1,61 +1,23 @@
-// what is glitch.com
+// what is glitch.com.   how will we use it in class?
+
 // moving from p5.js to 'vanilla' javascript (i.e. outside of the p5.js ecosystem)
 
-// import syntax - how to use three.js
+// import syntax - how to access three.js / how is it different from p5.js
+
 // how to use the browser console on glitch.com
 
-// what is 'new' keyword and how does it allow us to create new instances of a class
+// what is 'new' keyword and how does it allow us to create new instances of a class?
 
-// x, y, z positions - what is euclidean space / cartesian coordinates
+// x, y, z positions - what is euclidean space / cartesian coordinates?
 
 // looking at a three.js example 
+
 // wrapping everything in an 'init' function
 
 // what is a geometry, material, mesh
 
 // how to position a mesh in 3D space (and set rotation and scale)
 
-import * as THREE from "three";
-
-// console.log("three.js:",THREE);
-
-let scene = new THREE.Scene();
-scene.background = new THREE.Color("rgb(255,200,255)");
-
-let renderer = new THREE.WebGLRenderer();
-renderer.setSize(500, 500);
-document.body.appendChild(renderer.domElement);
-
-let camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
-camera.position.set(10, 10, -10);
-camera.lookAt(0, 0, 0);
-
-// for (let i = 0; i < 10; i++) {
-//   for (let j = 0; j < 10; j++) {
-//     let geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-//     let mat = new THREE.MeshNormalMaterial();
-//     let mesh = new THREE.Mesh(geometry, mat);
-//     scene.add(mesh);
-//     mesh.position.set(i - 4.5, j - 4.5);
-//   }
-// }
-
-let g = new THREE.BoxGeometry(1,1,1);
-let m = new THREE.MeshNormalMaterial();
-let mesh = new THREE.Mesh(g,m);
-scene.add(mesh);
-mesh.position.set(5,1,5);
-
-let mesh2 = new THREE.Mesh(g,m);
-mesh2.position.set(2,3,4);
-scene.add(mesh2);
-
-let mesh3 = new THREE.Mesh(g,m);
-mesh3.position.set(4,3,6);
-scene.add(mesh3);
-
-
-renderer.render(scene, camera);
 
 
 
