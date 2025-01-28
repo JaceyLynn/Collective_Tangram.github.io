@@ -19,9 +19,26 @@
 // how to position a mesh in 3D space (and set rotation and scale)
 
 
+import * as THREE from "three";
+
+let scene = new THREE.Scene();
+scene.background = new THREE.Color("rgb(255,200,255)")
+
+let camera = new THREE.PerspectiveCamera(60,1,0.1,1000);
+
+let renderer = new THREE.WebGLRenderer();
+renderer.setSize(400,400);
+document.body.appendChild(renderer.domElement);
+
+renderer.render(scene,camera);
+
+let boxGeo = new THREE.BoxGeometry(1,2,3);
+let boxMat = new THREE.MeshNormalMaterial();
+let boxMesh = new THREE.Mesh(boxGeo,boxMat);
+scene.add(boxMesh);
 
 
-
+renderer.render(scene,camera);
 
 
 
