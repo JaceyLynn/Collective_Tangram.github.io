@@ -24,18 +24,24 @@ import * as THREE from "three";
 let scene = new THREE.Scene();
 scene.background = new THREE.Color("rgb(255,200,255)")
 
-let camera = new THREE.PerspectiveCamera(60,1,0.1,1000);
+let camera = new THREE.PerspectiveCamera(30,1,0.1,1000);
+camera.position.set(10,10,10)
+camera.lookAt(0,0,0);
 
 let renderer = new THREE.WebGLRenderer();
 renderer.setSize(400,400);
 document.body.appendChild(renderer.domElement);
 
-renderer.render(scene,camera);
-
-let boxGeo = new THREE.BoxGeometry(1,2,3);
-let boxMat = new THREE.MeshNormalMaterial();
+let boxGeo = new THREE.SphereGeometry(1,12,12);
+let boxMat = new THREE.MeshPhongMaterial({color: new THREE.Color(0xffc300)});
 let boxMesh = new THREE.Mesh(boxGeo,boxMat);
 scene.add(boxMesh);
+
+let ambientLight = new THREE.AmbientLight(0xffffff);
+scene.add(ambientLight)
+
+let directionalLight = new THREE.DirectionalLight(0xDFFF00, 5);
+scene.add(directionalLight);
 
 
 renderer.render(scene,camera);
