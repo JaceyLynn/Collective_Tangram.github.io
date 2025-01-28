@@ -25,14 +25,19 @@ let scene = new THREE.Scene();
 scene.background = new THREE.Color("rgb(255,200,255)")
 
 let camera = new THREE.PerspectiveCamera(30,1,0.1,1000);
-camera.position.set(10,10,10)
+camera.position.set(50,50,50)
 camera.lookAt(0,0,0);
 
 let renderer = new THREE.WebGLRenderer();
 renderer.setSize(400,400);
 document.body.appendChild(renderer.domElement);
 
-let boxGeo = new THREE.SphereGeometry(1,12,12);
+let geometry = new THREE.TorusKnotGeometry( 10, 3, 100, 16 ); 
+let material = new THREE.MeshBasicMaterial( { color: 0xffc300 } ); 
+let torusKnot = new THREE.Mesh( geometry, material ); scene.add( torusKnot );
+scene.add(torusKnot);
+
+let boxGeo = new THREE.SphereGeometry(10,30,12);
 let boxMat = new THREE.MeshPhongMaterial({color: new THREE.Color(0xffc300)});
 let boxMesh = new THREE.Mesh(boxGeo,boxMat);
 scene.add(boxMesh);
