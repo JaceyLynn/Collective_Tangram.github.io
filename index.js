@@ -3,42 +3,95 @@ import * as THREE from 'three';
 // Scene, Camera, Renderer
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+ camera.position.set(0, 0, 10); // Position camera on the positive Z-axis, looking towards the origin
+ camera.lookAt(0, 0, 0); // Ensure the camera is looking directly at the scene center
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
 // Lighting
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(5, 10, 10);
-light.castShadow = true;
-scene.add(light);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambientLight);
 
-// Grid of Shapes
-const colors = [0xffe0b2, 0xffcc80, 0x81c784, 0x64b5f6, 0xba68c8];
-const gridSize = 6;
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+directionalLight.position.set(5, 10, 7);
+directionalLight.castShadow = true;
+scene.add(directionalLight);
 
-for (let i = 0; i < gridSize; i++) {
-  for (let j = 0; j < gridSize; j++) {
-    const geometry = Math.random() > 0.5
-      ? new THREE.CircleGeometry(Math.random() * 0.5 + 0.2, 32)
-      : new THREE.PlaneGeometry(Math.random() * 0.5 + 0.2, Math.random() * 0.5 + 0.2);
+// Cone Geometry (Speckled)
+const coneGeometry = new THREE.ConeGeometry(1, 3, 32);
+const coneMaterial = new THREE.MeshStandardMaterial({
+  color: 0x90caf9,
+  roughness: 0.7,
+});
+const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+cone.position.set(-2, 2, 0);
+cone.castShadow = true;
+scene.add(cone);
 
-    const material = new THREE.MeshStandardMaterial({
-      color: colors[Math.floor(Math.random() * colors.length)],
-      flatShading: true,
-    });
+// Large Sphere (Textured)
+const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
+const sphereMaterial = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  roughness: 1,
+});
+const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+sphere.position.set(2, 1, -1);
+sphere.castShadow = true;
+scene.add(sphere);
 
-    const shape = new THREE.Mesh(geometry, material);
-    shape.position.set(i - gridSize / 2, j - gridSize / 2, 0);
-    shape.castShadow = true;
-    shape.receiveShadow = true;
-    scene.add(shape);
-  }
-}
+// Metallic Ring
+const ringGeometry = new THREE.RingGeometry(1, 1.5, 32);
+const ringMaterial = new THREE.MeshStandardMaterial({
+  color: 0xcccccc,
+  metalness: 1,
+  roughness: 0.2,
+});
+const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+ring.position.set(0, 0, 0);
+ring.rotation.x = Math.PI / 2;
+ring.castShadow = true;
+scene.add(ring);
 
-// Camera Position
-camera.position.z = 10;
+// Wooden Cylinder
+const cylinderGeometry = new THREE.CylinderGeometry(0.2, 0.2, 12, 32);
+const cylinderMaterial = new THREE.MeshStandardMaterial({
+  color: 0x8d6e63,
+  roughness: 1,
+});
+const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+cylinder.position.set(1, -3, -1);
+cylinder.rotation.z = Math.PI / 4;
+cylinder.castShadow = true;
+cylinderGeometry.rotateX(0);
+cylinderGeometry.rotateZ(-30);
+scene.add(cylinder);
+
+// Transparent Glass Sphere
+const glassGeometry = new THREE.SphereGeometry(1.2, 32, 32);
+const glassMaterial = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.4,
+  roughness: 0.1,
+});
+const glassSphere = new THREE.Mesh(glassGeometry, glassMaterial);
+glassSphere.position.set(-3, -1, 1);
+glassSphere.castShadow = true;
+scene.add(glassSphere);
+
+const geometry = new THREE.TorusGeometry(4,0.2, 16, 100 ); 
+const ringMaterial = new THREE.MeshStandardMaterial({
+  color: 0xcccccc,
+  metalness: 1,
+  roughness: 0.2,
+});
+const torus = new THREE.Mesh( geometry, ringMaterial ); 
+geometry.rotateX(-2);
+geometry.rotateZ(10);
+torus.position.set(1, -2, 0);
+scene.add( torus );
 
 // Animation Loop
 function animate() {
@@ -46,99 +99,3 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// // Because this is a module script, we can import code from other modules
-// // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules
-// import * as THREE from "three";
-
-// let width = 400;
-// let height = 400;
-
-// // create a scene container (into which we will add all of the other objects)
-// let scene = new THREE.Scene();
-// // set a background color for our scene to something other than the default
-// scene.background = new THREE.Color(1,0,0.2);
-
-// // create a renderer which will draw the scene onto our HTML <canvas> element
-// let renderer = new THREE.WebGLRenderer();
-// renderer.setSize(width, height);
-// document.body.appendChild(renderer.domElement); // add the renderer to the webpage
-
-// // create a camera which can be moved abouyt the scene
-// let fieldOfView = 60; // how wide is our camera view in degrees
-// let aspectRatio = width / height;
-// let camera = new THREE.PerspectiveCamera(fieldOfView, aspectRatio, 0.1, 1000);
-// camera.position.z = 8; // place the camera in space
-
-// // create an object with a geometry and material
-// const geometry = new THREE.TorusKnotGeometry( 2, 0.5, 100, 16 );
-// let myColor = new THREE.Color("rgb(0,255,255)"); // we will define our color with three numbers (red, green blue)
-// const material = new THREE.MeshBasicMaterial({color: myColor});
-// const sphere = new THREE.Mesh( geometry, material );
-// scene.add( sphere ); // add it to the scene
-
-// // try adding some lights
-// let myLight = new THREE.AmbientLight('0xffffff');
-// scene.add(myLight);
-
-// // White directional light at half intensity shining from the top.
-// const directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
-// scene.add( directionalLight );
-
-// // finally, draw our scene to the <canvas> element
-// renderer.render(scene, camera);
