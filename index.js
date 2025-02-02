@@ -1,11 +1,11 @@
 import * as THREE from "three";
 
 let scene = new THREE.Scene();
-scene.background = new THREE.Color("rgb(255,200,255)");
+scene.background = new THREE.Color("#BCEDF6");
 
 let camera = new THREE.PerspectiveCamera(60, 1, 1, 1000);
- camera.position.set(0, 0, 25); // Position camera on the positive Z-axis, looking towards the origin
- camera.lookAt(3, -2, 0); // Ensure the camera is looking directly at the scene center
+ camera.position.set(0, 0, 24); // Position camera on the positive Z-axis, looking towards the origin
+ camera.lookAt(2.5, -2.5, 0); // Ensure the camera is looking directly at the scene center
 
 let renderer = new THREE.WebGLRenderer();
 renderer.setSize(400, 400);
@@ -15,15 +15,15 @@ document.body.appendChild(renderer.domElement);
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 4);
-directionalLight.position.set(5, 10, 7);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+directionalLight.position.set(-5, 10, 7);
 directionalLight.castShadow = true;
 scene.add(directionalLight);
 
 // Cone Geometry (Speckled)
 const coneGeometry = new THREE.ConeGeometry(2,8, 32);
 const coneMaterial = new THREE.MeshStandardMaterial({
-  color: 0x90caf9,
+  color: '#6B7FD7',
   roughness: 0.7,
 });
 const cone = new THREE.Mesh(coneGeometry, coneMaterial);
@@ -34,9 +34,9 @@ coneGeometry.rotateZ(7);
 scene.add(cone);
 
 // Large Sphere (Textured)
-const sphereGeometry = new THREE.SphereGeometry(8, 32, 32);
+const sphereGeometry = new THREE.SphereGeometry(9, 32, 32);
 const sphereMaterial = new THREE.MeshStandardMaterial({
-  color: 0xffffff,
+  color: '#DDFBD2',
   roughness: 1,
 });
 const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
@@ -45,9 +45,9 @@ sphere.castShadow = true;
 scene.add(sphere);
 
 // Wooden Cylinder
-const cylinderGeometry = new THREE.CylinderGeometry(0.5, 0.5,36, 32);
+const cylinderGeometry = new THREE.CylinderGeometry(0.5, 0.5,38, 32);
 const cylinderMaterial = new THREE.MeshStandardMaterial({
-  color: 0x8d6e63,
+  color: '#A37A74',
   roughness: 1,
 });
 const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
@@ -59,15 +59,15 @@ cylinderGeometry.rotateZ(-30);
 scene.add(cylinder);
 
 // glass Cylinder
-const cylinderGeometry2 = new THREE.CylinderGeometry(1.5, 1.5,0.5, 32);
+const cylinderGeometry2 = new THREE.CylinderGeometry(1, 1,0.2, 32);
 const cylinderMaterial2 = new THREE.MeshStandardMaterial({
-  color: 0xffffff,
+  color: '#FFFFFF',
   transparent: true,
   opacity: 0.4,
   roughness: 0.1,
 });
 const cylinder2 = new THREE.Mesh(cylinderGeometry2, cylinderMaterial2);
-cylinder2.position.set(0, -5, 15);
+cylinder2.position.set(0, -3.5, 15);
 cylinder2.rotation.z = Math.PI / 4;
 cylinder2.castShadow = true;
 cylinderGeometry2.rotateX(1);
@@ -78,7 +78,7 @@ scene.add(cylinder2);
 const glassGeometry = new THREE.SphereGeometry(1, 32, 32);
 const glassMaterial = new THREE.MeshStandardMaterial({
   color: '#FFFFFF',
-  metalness: 0.6,
+  metalness: 0.2,
   roughness: 0,
 });
 const glassSphere = new THREE.Mesh(glassGeometry, glassMaterial);
@@ -89,7 +89,7 @@ scene.add(glassSphere);
 const geometry = new THREE.TorusGeometry(5,0.2, 16, 100 ); 
 const ringMaterial = new THREE.MeshStandardMaterial({
   color: '#FFFFFF',
-  metalness: 0.6,
+  metalness: 0.4,
   roughness: 0,
 });
 const torus = new THREE.Mesh( geometry, ringMaterial ); 
@@ -110,12 +110,13 @@ const indices = [
 // Create PolyhedronGeometry
 const polyhedronGeometry = new THREE.PolyhedronGeometry(vertices, indices, 1.5, 2);
 const polyhedronMaterial = new THREE.MeshStandardMaterial({
-  color: 0xffb74d,
-  metalness: 0.3,
-  roughness: 0.7,
+  color: '#FFFFFF',
+  transparent: true,
+  opacity: 0.4,
+  roughness: 0.1,
 });
 const polyhedron = new THREE.Mesh(polyhedronGeometry, polyhedronMaterial);
-polyhedron.position.set(7, 10, -2);
+polyhedron.position.set(7, 8, -2);
 polyhedron.castShadow = true;
 scene.add(polyhedron);
 
