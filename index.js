@@ -58,13 +58,28 @@ cylinderGeometry.rotateX(0);
 cylinderGeometry.rotateZ(-30);
 scene.add(cylinder);
 
-// Transparent Glass Sphere
-const glassGeometry = new THREE.SphereGeometry(1, 32, 32);
-const glassMaterial = new THREE.MeshStandardMaterial({
+// Wooden Cylinder
+const cylinderGeometry2 = new THREE.CylinderGeometry(1.5, 1.5,0.5, 32);
+const cylinderMaterial2 = new THREE.MeshStandardMaterial({
   color: 0xffffff,
   transparent: true,
   opacity: 0.4,
   roughness: 0.1,
+});
+const cylinder2 = new THREE.Mesh(cylinderGeometry2, cylinderMaterial2);
+cylinder2.position.set(0, -5, 15);
+cylinder2.rotation.z = Math.PI / 4;
+cylinder2.castShadow = true;
+cylinderGeometry2.rotateX(1);
+cylinderGeometry2.rotateZ(-4);
+scene.add(cylinder2);
+
+// Transparent Glass Sphere
+const glassGeometry = new THREE.SphereGeometry(1, 32, 32);
+const glassMaterial = new THREE.MeshStandardMaterial({
+  color: 0xcccccc,
+  metalness: 1,
+  roughness: 0.2,
 });
 const glassSphere = new THREE.Mesh(glassGeometry, glassMaterial);
 glassSphere.position.set(-5, -1, -3);
@@ -82,6 +97,28 @@ geometry.rotateX(-2);
 geometry.rotateZ(10);
 torus.position.set(1, -2, 10);
 scene.add( torus );
+
+// Define Vertices and Indices for a Tetrahedron (or custom shape)
+const vertices = [
+  1, 1, 1, -1, -1, 1, -1, 1, -1, 1, -1, -1 // Example vertices
+];
+
+const indices = [
+  2, 1, 0, 0, 3, 2, 1, 3, 0, 2, 3, 1 // Example faces
+];
+
+// Create PolyhedronGeometry
+const polyhedronGeometry = new THREE.PolyhedronGeometry(vertices, indices, 1.5, 2);
+const polyhedronMaterial = new THREE.MeshStandardMaterial({
+  color: 0xffb74d,
+  metalness: 0.3,
+  roughness: 0.7,
+});
+const polyhedron = new THREE.Mesh(polyhedronGeometry, polyhedronMaterial);
+polyhedron.position.set(7, 10, -2);
+polyhedron.castShadow = true;
+scene.add(polyhedron);
+
 
 // Animation Loop
 function animate() {
