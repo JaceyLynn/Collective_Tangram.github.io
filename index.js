@@ -107,10 +107,9 @@ scene.add(glassSphere);
 
 // Add a torus ring
 const geometry = new THREE.TorusGeometry(5, 0.1, 16, 100);
-const ringMaterial = new THREE.MeshStandardMaterial({
-  color: '#FFFFFF', 
-  metalness: 0.4, 
-  roughness: 0, 
+const ringMaterial = new THREE.MeshLambertMaterial({
+  color: '#FFFFFF',
+  emissive:'#8A8A8A'
 });
 const torus = new THREE.Mesh(geometry, ringMaterial);
 geometry.rotateX(-2);
