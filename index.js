@@ -1,55 +1,52 @@
-// what is glitch.com.   how will we use it in class?
+import * as THREE from 'three';
 
-// moving from p5.js to 'vanilla' javascript (i.e. outside of the p5.js ecosystem)
-
-// import syntax - how to access three.js / how is it different from p5.js
-
-// how to use the browser console on glitch.com
-
-// what is 'new' keyword and how does it allow us to create new instances of a class?
-
-// x, y, z positions - what is euclidean space / cartesian coordinates?
-
-// looking at a three.js example 
-
-// wrapping everything in an 'init' function
-
-// what is a geometry, material, mesh
-
-// how to position a mesh in 3D space (and set rotation and scale)
-
-
-import * as THREE from "three";
-
-let scene = new THREE.Scene();
-scene.background = new THREE.Color("rgb(255,200,255)")
-
-let camera = new THREE.PerspectiveCamera(30,1,0.1,1000);
-camera.position.set(50,50,50)
-camera.lookAt(0,0,0);
-
-let renderer = new THREE.WebGLRenderer();
-renderer.setSize(400,400);
+// Scene, Camera, Renderer
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-let geometry = new THREE.TorusKnotGeometry( 10, 3, 100, 16 ); 
-let material = new THREE.MeshBasicMaterial( { color: 0xffc300 } ); 
-let torusKnot = new THREE.Mesh( geometry, material ); scene.add( torusKnot );
-scene.add(torusKnot);
+// Lighting
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(5, 10, 10);
+light.castShadow = true;
+scene.add(light);
 
-let boxGeo = new THREE.SphereGeometry(10,30,12);
-let boxMat = new THREE.MeshPhongMaterial({color: new THREE.Color(0xffc300)});
-let boxMesh = new THREE.Mesh(boxGeo,boxMat);
-scene.add(boxMesh);
+// Grid of Shapes
+const colors = [0xffe0b2, 0xffcc80, 0x81c784, 0x64b5f6, 0xba68c8];
+const gridSize = 6;
 
-let ambientLight = new THREE.AmbientLight(0xffffff);
-scene.add(ambientLight)
+for (let i = 0; i < gridSize; i++) {
+  for (let j = 0; j < gridSize; j++) {
+    const geometry = Math.random() > 0.5
+      ? new THREE.CircleGeometry(Math.random() * 0.5 + 0.2, 32)
+      : new THREE.PlaneGeometry(Math.random() * 0.5 + 0.2, Math.random() * 0.5 + 0.2);
 
-let directionalLight = new THREE.DirectionalLight(0xDFFF00, 5);
-scene.add(directionalLight);
+    const material = new THREE.MeshStandardMaterial({
+      color: colors[Math.floor(Math.random() * colors.length)],
+      flatShading: true,
+    });
 
+    const shape = new THREE.Mesh(geometry, material);
+    shape.position.set(i - gridSize / 2, j - gridSize / 2, 0);
+    shape.castShadow = true;
+    shape.receiveShadow = true;
+    scene.add(shape);
+  }
+}
 
-renderer.render(scene,camera);
+// Camera Position
+camera.position.z = 10;
+
+// Animation Loop
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+
 
 
 
