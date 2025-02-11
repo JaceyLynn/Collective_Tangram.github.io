@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // Create the scene and set the background color
 let scene = new THREE.Scene();
@@ -7,12 +8,13 @@ scene.background = new THREE.Color("#FFB35C");
 // Set up the camera
 let camera = new THREE.PerspectiveCamera(60, 1, 1, 1000);
 camera.position.set(0, 0, 24); 
-camera.lookAt(2.5, -2.5, 0); 
 
 // Set up the renderer
 let renderer = new THREE.WebGLRenderer();
 renderer.setSize(600, 600);
 document.body.appendChild(renderer.domElement);
+
+let controls = new OrbitControls(camera, renderer.domElement);
 
 // Add ambient lighting
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
