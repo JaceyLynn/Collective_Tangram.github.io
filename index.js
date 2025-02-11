@@ -6,21 +6,21 @@ function init() {
   // create a scene
   scene = new THREE.Scene();
   scene.background = new THREE.Color("rgb(200,100,200)");
+  
 
   // create the renderer
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
+  
+
 
   // create our camera
-  camera = new THREE.PerspectiveCamera(
-    60,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-  );
-  camera.position.set(0, 0, 10);
-  // Create the scene and set the background color
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+  camera.position.set(0,0,10);
+  
+  
+    // add orbit controls
   let controls = new OrbitControls(camera, renderer.domElement);
 
   // Add ambient lighting
@@ -171,6 +171,15 @@ function init() {
   polyhedron.position.set(7, 8, -2);
   polyhedron.castShadow = true;
   scene.add(polyhedron);
+  
+  draw();
 }
-// Render the scene
-renderer.render(scene, camera);
+
+function draw(){
+  renderer.render(scene,camera);
+  
+  // ask the browser to render another frame when it is ready
+  window.requestAnimationFrame(draw);
+}
+// get everything going by calling init
+init();
