@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 let scene, renderer, camera;
+import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 
 function init() {
   // create a scene
@@ -32,6 +34,11 @@ function init() {
   directionalLight.position.set(-5, 10, 7);
   directionalLight.castShadow = true;
   scene.add(directionalLight);
+  
+  directionalLight.shadow.mapSize.width = 512; // default
+directionalLight.shadow.mapSize.height = 512; // default
+directionalLight.shadow.camera.near = 0.5; // default
+directionalLight.shadow.camera.far = 500; // default
 
   // Add a cone to the scene
   const coneGeometry = new THREE.ConeGeometry(2, 8, 32);
@@ -171,6 +178,43 @@ function init() {
   polyhedron.position.set(7, 8, -2);
   polyhedron.castShadow = true;
   scene.add(polyhedron);
+  
+
+const loader = new FontLoader();
+const font = loader.load(
+	// resource URL
+	'fonts/helvetiker_bold.typeface.json',
+
+	// onLoad callback
+	function ( font ) {
+		// do something with the font
+		console.log( font );
+	},
+
+	// onProgress callback
+	function ( xhr ) {
+		console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+	},
+
+	// onError callback
+	function ( err ) {
+		console.log( 'An error happened' );
+	}
+);
+loader.load( 'fonts/helvetiker_regular.typeface.json', function ( font ) {
+
+	const geometry = new TextGeometry( 'Hello three.js!', {
+		font: font,
+		size: 1000,
+		depth: 5,
+		curveSegments: 12,
+		bevelEnabled: true,
+		bevelThickness: 10,
+		bevelSize: 8,
+		bevelOffset: 0,
+		bevelSegments: 5
+	} );
+} );
   
   draw();
 }
