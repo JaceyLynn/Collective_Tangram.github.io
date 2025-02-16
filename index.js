@@ -6,8 +6,7 @@ let angle = 0;
 const radius = 40;
 const centerY = 20;
 const speed = 0.01;
-let octahedron, detailLevel = 0;
-let detailIncreasing = true;
+let octahedron, detailLevel;
 
 function init() {
   // Create a scene
@@ -80,62 +79,28 @@ function init() {
     scene.add(column);
   }
 
-  // Start Animation
-  animate();
-}
-
-function createOctahedron() {
-  const octahedronGeometry = new THREE.OctahedronGeometry(5, detailLevel);
+    const octahedronGeometry = new THREE.OctahedronGeometry(5, 5);
   const octahedronMaterial = new THREE.MeshStandardMaterial({ color: "#FF5733", wireframe: true });
 
   octahedron = new THREE.Mesh(octahedronGeometry, octahedronMaterial);
   octahedron.position.set(0, centerY, 0);
 
   scene.add(octahedron);
+  // Start Animation
+  animate();
 }
-
-// Function to update Octahedron's detail dynamically
-function updateOctahedronDetail() {
-  // Smoothly change detail level between 0 and 5
-  if (detailIncreasing) {
-    detailLevel += 0.05;
-    if (detailLevel >= 5) detailIncreasing = false;
-  } else {
-    detailLevel -= 0.05;
-    if (detailLevel <= 0) detailIncreasing = true;
-  }
-
-  detailLevel = Math.round(detailLevel); // Keep it an integer
-
-  // Dispose of old geometry and replace with new one
-  if (octahedron) {
-    scene.remove(octahedron); // Remove old mesh
-    octahedron.geometry.dispose(); // Free memory
-    octahedron.material.dispose(); // Dispose of material if necessary
-  }
-
-  // Create new Octahedron with updated detail
-  const newGeometry = new THREE.OctahedronGeometry(5, detailLevel);
-  octahedron = new THREE.Mesh(newGeometry, new THREE.MeshStandardMaterial({ color: "#FF5733", wireframe: true }));
-
-  octahedron.position.set(0, centerY, 0);
-  scene.add(octahedron);
-}
-
 // Animation loop
 function animate() {
-  requestAnimationFrame(animate);
 
   // Update camera position in a circular motion
   angle += speed;
   camera.position.x = radius * Math.cos(angle);
   camera.position.z = radius * Math.sin(angle);
   camera.lookAt(0, centerY, 0);
-
-  // Update Octahedron detail level
-  updateOctahedronDetail();
+  
 
   renderer.render(scene, camera);
+  requestAnimationFrame(animate);
 }
 
 // Start the scene
