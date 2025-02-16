@@ -41,62 +41,63 @@ function init() {
   directionalLight.shadow.camera.near = 0.5; // default
   directionalLight.shadow.camera.far = 500; // default
 
-  // Add a floor
-  const cylinderGeometry3 = new THREE.CylinderGeometry(5, 5, 0.5, 20);
-  const cylinderMaterial3 = new THREE.MeshStandardMaterial({
-    color: "#27187E",
-    roughness: 0,
-  });
-  const cylinder3 = new THREE.Mesh(cylinderGeometry3, cylinderMaterial3);
-  cylinder3.position.set(0, 0, 0);
-  cylinder3.castShadow = true;
+// Add a scaled-up floor
+const cylinderGeometry3 = new THREE.CylinderGeometry(50, 50, 5, 20);
+const cylinderMaterial3 = new THREE.MeshStandardMaterial({
+  color: "#27187E",
+  roughness: 0,
+});
+const cylinder3 = new THREE.Mesh(cylinderGeometry3, cylinderMaterial3);
+cylinder3.position.set(0, 0, 0);
+cylinder3.castShadow = true;
 
-  scene.add(cylinder3);
+scene.add(cylinder3);
 
-  // Add a ceiling
-  const shape = new THREE.Shape();
+// Add a scaled-up ceiling
+const shape = new THREE.Shape();
 
-  // Create outer ring shape
-  shape.absarc(0, 0, 5, 0, Math.PI * 2, false);
+// Create outer ring shape
+shape.absarc(0, 0, 50, 0, Math.PI * 2, false);
 
-  // Create inner hole
-  const hole = new THREE.Path();
-  hole.absarc(0, 0, 3, 0, Math.PI * 2, true);
-  shape.holes.push(hole);
+// Create inner hole
+const hole = new THREE.Path();
+hole.absarc(0, 0, 30, 0, Math.PI * 2, true);
+shape.holes.push(hole);
 
-  // Define extrusion settings
-  const extrudeSettings = {
-    depth: 0.2, // Adjust this for thickness
-    bevelEnabled: false,
-  };
+// Define extrusion settings
+const extrudeSettings = {
+  depth: 2, // Adjust this for thickness
+  bevelEnabled: false,
+};
 
-  // Create extruded geometry
-  const extrudedGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+// Create extruded geometry
+const extrudedGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
 
-  // Create material
-  const material = new THREE.MeshLambertMaterial({
-    color: "#FFFFFF",
-    emissive: "#8A8A8A",
-  });
+// Create material
+const material = new THREE.MeshLambertMaterial({
+  color: "#FFFFFF",
+  emissive: "#8A8A8A",
+});
 
-  // Create mesh
-  const extrudedRing = new THREE.Mesh(extrudedGeometry, material);
-  extrudedRing.rotateX(-Math.PI / 2);
-  extrudedRing.position.set(0, 2, 0);
+// Create mesh
+const extrudedRing = new THREE.Mesh(extrudedGeometry, material);
+extrudedRing.rotateX(-Math.PI / 2);
+extrudedRing.position.set(0, 20, 0); // Move higher due to 10x scale
 
-  // Add to scene
-  scene.add(extrudedRing);
-  
-  const columnCount = 10;
-const columnHeight = 2; // Distance between ceiling and floor
-const radius = 4; // Position of columns (between inner and outer ring)
+// Add to scene
+scene.add(extrudedRing);
+
+// Add scaled-up columns
+const columnCount = 10;
+const columnHeight = 20; // Scale height up
+const radius = 40; // Move columns outward
 
 for (let i = 0; i < columnCount; i++) {
   const angle = (i / columnCount) * Math.PI * 2; // Distribute evenly around circle
   const x = radius * Math.cos(angle);
   const z = radius * Math.sin(angle);
 
-  const columnGeometry = new THREE.CylinderGeometry(0.2, 0.2, columnHeight, 16);
+  const columnGeometry = new THREE.CylinderGeometry(2, 2, columnHeight, 16); // Scale up radius
   const columnMaterial = new THREE.MeshStandardMaterial({
     color: "#FFD700",
     roughness: 0.3,
@@ -109,6 +110,7 @@ for (let i = 0; i < columnCount; i++) {
 
   scene.add(column);
 }
+
   const x = 0, y = 0;
 
 const heartShape = new THREE.Shape();
@@ -123,8 +125,8 @@ heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
 
 const heartgeometry = new THREE.ShapeGeometry( heartShape );
 const heartmaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-const mesh = new THREE.Mesh( geometry, material ) ;
-scene.add( mesh );
+const heartmesh = new THREE.Mesh( heartgeometry, heartmaterial ) ;
+scene.add( heartmesh );
 
   //   // Add ceiling
   //   const ringgeometry = new THREE.RingGeometry( 1, 5, 32 );
