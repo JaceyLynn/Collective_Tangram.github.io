@@ -79,7 +79,7 @@ function init() {
     scene.add(column);
   }
 
-    const octahedronGeometry = new THREE.OctahedronGeometry(5, 5);
+    const octahedronGeometry = new THREE.OctahedronGeometry(10, 5);
   const octahedronMaterial = new THREE.MeshStandardMaterial({ color: "#FF5733", wireframe: true });
 
   octahedron = new THREE.Mesh(octahedronGeometry, octahedronMaterial);
