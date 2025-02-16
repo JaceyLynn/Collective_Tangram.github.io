@@ -70,9 +70,9 @@ function init() {
   scene.add(extrudedRing);
 
   // Add smoother columns
-  const columnCount = 10;
+  const columnCount = 8;
   const columnHeight = 20;
-  const columnradius = 50;
+  const columnradius = 45;
 
   for (let i = 0; i < columnCount; i++) {
     const angle = (i / columnCount) * Math.PI * 2;
