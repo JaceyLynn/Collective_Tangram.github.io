@@ -14,14 +14,23 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // create our camera
-  camera = new THREE.PerspectiveCamera(
-    60,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-  );
-  camera.position.set(0, 0, 10);
+  // Create a Perspective Camera
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(60, 30, 0); // Start at radius with some height
+
+// Define animation parameters
+let angle = 0;
+const radius = 40; // Match column radius
+const centerY = 20; // Adjust height if needed
+const speed = 0.01; // Speed of rotation
+  // // create our camera
+  // camera = new THREE.PerspectiveCamera(
+  //   60,
+  //   window.innerWidth / window.innerHeight,
+  //   0.1,
+  //   1000
+  // );
+  // camera.position.set(0, 0, 10);
 
   // add orbit controls
   let controls = new OrbitControls(camera, renderer.domElement);
@@ -41,8 +50,8 @@ function init() {
   directionalLight.shadow.camera.near = 0.5; // default
   directionalLight.shadow.camera.far = 500; // default
 
-// Add a scaled-up floor
-const cylinderGeometry3 = new THREE.CylinderGeometry(50, 50, 5, 20);
+// Add a scaled-up and smoother floor
+const cylinderGeometry3 = new THREE.CylinderGeometry(50, 50, 5, 64); // Increased segments
 const cylinderMaterial3 = new THREE.MeshStandardMaterial({
   color: "#27187E",
   roughness: 0,
@@ -53,21 +62,22 @@ cylinder3.castShadow = true;
 
 scene.add(cylinder3);
 
-// Add a scaled-up ceiling
+// Add a scaled-up and smoother ceiling
 const shape = new THREE.Shape();
 
-// Create outer ring shape
-shape.absarc(0, 0, 50, 0, Math.PI * 2, false);
+// Create outer ring shape with more segments
+shape.absarc(0, 0, 50, 0, Math.PI * 2, false, 64); // More segments
 
-// Create inner hole
+// Create inner hole with more segments
 const hole = new THREE.Path();
-hole.absarc(0, 0, 30, 0, Math.PI * 2, true);
+hole.absarc(0, 0, 30, 0, Math.PI * 2, true, 64); // More segments
 shape.holes.push(hole);
 
 // Define extrusion settings
 const extrudeSettings = {
-  depth: 2, // Adjust this for thickness
+  depth: 2, // Adjust thickness
   bevelEnabled: false,
+  curveSegments: 64, // More segments for smoothness
 };
 
 // Create extruded geometry
@@ -82,12 +92,12 @@ const material = new THREE.MeshLambertMaterial({
 // Create mesh
 const extrudedRing = new THREE.Mesh(extrudedGeometry, material);
 extrudedRing.rotateX(-Math.PI / 2);
-extrudedRing.position.set(0, 20, 0); // Move higher due to 10x scale
+extrudedRing.position.set(0, 20, 0); // Adjust position for scaling
 
 // Add to scene
 scene.add(extrudedRing);
 
-// Add scaled-up columns
+// Add smoother columns
 const columnCount = 10;
 const columnHeight = 20; // Scale height up
 const radius = 40; // Move columns outward
@@ -97,7 +107,7 @@ for (let i = 0; i < columnCount; i++) {
   const x = radius * Math.cos(angle);
   const z = radius * Math.sin(angle);
 
-  const columnGeometry = new THREE.CylinderGeometry(2, 2, columnHeight, 16); // Scale up radius
+  const columnGeometry = new THREE.CylinderGeometry(2, 2, columnHeight, 64); // Increased segments for smoothness
   const columnMaterial = new THREE.MeshStandardMaterial({
     color: "#FFD700",
     roughness: 0.3,
@@ -111,22 +121,10 @@ for (let i = 0; i < columnCount; i++) {
   scene.add(column);
 }
 
-  const x = 0, y = 0;
 
-const heartShape = new THREE.Shape();
 
-heartShape.moveTo( x + 5, y + 5 );
-heartShape.bezierCurveTo( x + 5, y + 5, x + 4, y, x, y );
-heartShape.bezierCurveTo( x - 6, y, x - 6, y + 7,x - 6, y + 7 );
-heartShape.bezierCurveTo( x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19 );
-heartShape.bezierCurveTo( x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7 );
-heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
-heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
 
-const heartgeometry = new THREE.ShapeGeometry( heartShape );
-const heartmaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-const heartmesh = new THREE.Mesh( heartgeometry, heartmaterial ) ;
-scene.add( heartmesh );
+  
 
   //   // Add ceiling
   //   const ringgeometry = new THREE.RingGeometry( 1, 5, 32 );
@@ -142,9 +140,25 @@ scene.add( heartmesh );
   draw();
 }
 
+function animateCamera() {
+  requestAnimationFrame(animateCamera);
+
+  // Update camera position in a circular path
+  angle += speed;
+  camera.position.x = radius * Math.cos(angle);
+  camera.position.z = radius * Math.sin(angle);
+
+  // Keep the camera looking at the center
+  camera.lookAt(0, centerY, 0);
+
+  renderer.render(scene, camera);
+}
+
+// Start Animation
+animateCamera();
 function draw() {
   renderer.render(scene, camera);
-
+requestAnimationFrame(animateCamera);
   // ask the browser to render another frame when it is ready
   window.requestAnimationFrame(draw);
 }
