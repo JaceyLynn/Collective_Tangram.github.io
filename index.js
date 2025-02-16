@@ -121,17 +121,16 @@ directionalLight.shadow.camera.far = 500; // default
   glassSphere.castShadow = true;
   scene.add(glassSphere);
 
-  // Add a torus ring
-  const geometry = new THREE.TorusGeometry(5, 0.1, 16, 100);
+  // Add ceiling
+  const ringgeometry = new THREE.RingGeometry( 1, 5, 32 ); 
   const ringMaterial = new THREE.MeshLambertMaterial({
     color: "#FFFFFF",
     emissive: "#8A8A8A",
   });
-  const torus = new THREE.Mesh(geometry, ringMaterial);
-  geometry.rotateX(-2);
-  geometry.rotateZ(10);
-  torus.position.set(1, -2, 8);
-  scene.add(torus);
+  const ceiling = new THREE.Mesh(ringgeometry, ringMaterial);
+  ceiling.rotateX(-3.14/2);
+  ceiling.position.set(1, -2, 8);
+  scene.add(ceiling);
 
   // Add a polyhedron
   const vertices = [
