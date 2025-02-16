@@ -21,7 +21,7 @@ function init() {
 
   // Create the Perspective Camera
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(60, 30, 0);
+  camera.position.set(50, 10, 0);
 
   // Add orbit controls
   let controls = new OrbitControls(camera, renderer.domElement);
@@ -87,18 +87,33 @@ function init() {
   animate();
 }
 
-// Function to create an Octahedron
+// Function to create an Octahedron (initial setup)
 function createOctahedron() {
-  if (octahedron) {
-    scene.remove(octahedron); // Remove previous instance
-  }
-  
   const octahedronGeometry = new THREE.OctahedronGeometry(5, detailLevel);
   const octahedronMaterial = new THREE.MeshStandardMaterial({ color: "#FF5733", wireframe: true });
+
   octahedron = new THREE.Mesh(octahedronGeometry, octahedronMaterial);
   octahedron.position.set(0, centerY, 0);
-  
+
   scene.add(octahedron);
+}
+
+// Function to update Octahedron's detail
+function updateOctahedronDetail() {
+  // Change the detail level smoothly
+  if (detailIncreasing) {
+    detailLevel += 0.5;
+    if (detailLevel >= 5) detailIncreasing = false;
+  } else {
+    detailLevel -= 0.5;
+    if (detailLevel <= 0) detailIncreasing = true;
+  }
+
+  detailLevel = Math.round(detailLevel); // Keep it an integer
+
+  // Update Octahedron geometry instead of removing & recreating
+  octahedron.geometry.dispose(); // Free memory
+  octahedron.geometry = new THREE.OctahedronGeometry(5, detailLevel);
 }
 
 // Function to animate camera and update Octahedron
@@ -109,23 +124,15 @@ function animate() {
   angle += speed;
   camera.position.x = radius * Math.cos(angle);
   camera.position.z = radius * Math.sin(angle);
-  camera.lookAt(0, centerY, 0);
+  camera.lookAt(0, centerY/2, 0);
 
-  // Update detail level smoothly
-  if (detailIncreasing) {
-    detailLevel += 0.5;
-    if (detailLevel >= 5) detailIncreasing = false;
-  } else {
-    detailLevel -= 0.5;
-    if (detailLevel <= 0) detailIncreasing = true;
-  }
-
-  detailLevel = Math.round(detailLevel); // Keep it an integer
-  createOctahedron(); // Update Octahedron with new detail
+  // Update Octahedron detail level
+  updateOctahedronDetail();
 
   renderer.render(scene, camera);
 }
 
 // Start the scene
 init();
+
 
