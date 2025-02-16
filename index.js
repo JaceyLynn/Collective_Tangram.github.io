@@ -6,16 +6,18 @@ let angle = 0;
 const radius = 40;
 const centerY = 20;
 const speed = 0.01;
-let octahedron, detailLevel;
+let octahedron;
 
 function init() {
-  // Create a scene
+  // Create scene
   scene = new THREE.Scene();
   scene.background = new THREE.Color("#DB7F67");
 
-  // Create the renderer
+  // Create renderer with shadow support
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true; // ✅ Enable shadow rendering
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.body.appendChild(renderer.domElement);
 
   // Create the Perspective Camera
@@ -30,38 +32,39 @@ function init() {
   // Add orbit controls
   let controls = new OrbitControls(camera, renderer.domElement);
 
-  // Add ambient lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  // Add ambient light
+  const ambientLight = new THREE.AmbientLight(0xffffff, 3);
   scene.add(ambientLight);
 
-  // Add directional lighting
-  const directionalLight1 = new THREE.DirectionalLight(0xffffff, 3);
-  directionalLight1.position.set(0, 10, 0);
-  directionalLight1.castShadow = true;
-  scene.add(directionalLight1);
-  // Add directional lighting
-  const directionalLight2 = new THREE.DirectionalLight(0xffffff, 1);
-  directionalLight2.position.set(20, 5, 10);
-  directionalLight2.castShadow = true;
-  scene.add(directionalLight2);
-  const directionalLight3 = new THREE.DirectionalLight(0xffffff, 1);
-  directionalLight3.position.set(10, 5, 20);
-  directionalLight3.castShadow = true;
-  scene.add(directionalLight3);
+  // Add directional light with shadow properties
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+  directionalLight.position.set(10, 40, 10);
+  directionalLight.castShadow = true; // ✅ Enable shadows
 
-  // Add a smoother floor
-  const cylinderGeometry3 = new THREE.CylinderGeometry(50, 50, 5, 64);
-  const cylinderMaterial3 = new THREE.MeshStandardMaterial({
+  // Configure shadow properties
+  directionalLight.shadow.mapSize.width = 1024;
+  directionalLight.shadow.mapSize.height = 1024;
+  directionalLight.shadow.camera.near = 1;
+  directionalLight.shadow.camera.far = 100;
+  directionalLight.shadow.camera.left = -50;
+  directionalLight.shadow.camera.right = 50;
+  directionalLight.shadow.camera.top = 50;
+  directionalLight.shadow.camera.bottom = -50;
+
+  scene.add(directionalLight);
+
+  // Add a floor that receives shadows
+  const floorGeometry = new THREE.CylinderGeometry(50, 50, 5, 64);
+  const floorMaterial = new THREE.MeshStandardMaterial({
     color: "#3F292B",
     roughness: 0,
   });
-  const cylinder3 = new THREE.Mesh(cylinderGeometry3, cylinderMaterial3);
-  cylinder3.position.set(0, 0, 0);
-  cylinder3.castShadow = true;
-  cylinder3.receiveShadow = true;
-  scene.add(cylinder3);
+  const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+  floor.position.set(0, 0, 0);
+  floor.receiveShadow = true; // ✅ Floor receives shadows
+  scene.add(floor);
 
-  // Add a smoother ceiling
+  // Create the ceiling that casts shadows
   const shape = new THREE.Shape();
   shape.absarc(0, 0, 50, 0, Math.PI * 2, false);
   const hole = new THREE.Path();
@@ -70,18 +73,14 @@ function init() {
 
   const extrudeSettings = { depth: 2, bevelEnabled: false, curveSegments: 64 };
   const extrudedGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  const material = new THREE.MeshLambertMaterial({
-    color: "#DBBEA1",
-    emissive: "#DBBEA1",
-  });
-  const extrudedRing = new THREE.Mesh(extrudedGeometry, material);
-  extrudedRing.rotateX(-Math.PI / 2);
-  extrudedRing.position.set(0, 20, 0);
-  extrudedRing.castShadow = true; //default is false
-  extrudedRing.receiveShadow = false; //default
-  scene.add(extrudedRing);
+  const ceilingMaterial = new THREE.MeshStandardMaterial({ color: "#DBBEA1" });
+  const ceiling = new THREE.Mesh(extrudedGeometry, ceilingMaterial);
+  ceiling.rotateX(-Math.PI / 2);
+  ceiling.position.set(0, 20, 0);
+  ceiling.castShadow = true; // ✅ Ceiling casts shadows
+  scene.add(ceiling);
 
-  // Add smoother columns
+  // Add columns that cast shadows
   const columnCount = 10;
   const columnHeight = 20;
   const columnradius = 45;
@@ -92,19 +91,17 @@ function init() {
     const z = columnradius * Math.sin(angle);
 
     const columnGeometry = new THREE.CylinderGeometry(2, 2, columnHeight, 64);
-    const columnMaterial = new THREE.MeshStandardMaterial({
-      color: "#A37B73",
-      roughness: 0.3,
-    });
+    const columnMaterial = new THREE.MeshStandardMaterial({ color: "#A37B73" });
 
     const column = new THREE.Mesh(columnGeometry, columnMaterial);
     column.position.set(x, columnHeight / 2, z);
-    column.castShadow = true;
+    column.castShadow = true; // ✅ Columns cast shadows
     column.receiveShadow = true;
 
     scene.add(column);
   }
 
+  // Add octahedron
   const octahedronGeometry = new THREE.OctahedronGeometry(10, 5);
   const octahedronMaterial = new THREE.MeshStandardMaterial({
     color: "#D34F73",
@@ -113,19 +110,15 @@ function init() {
 
   octahedron = new THREE.Mesh(octahedronGeometry, octahedronMaterial);
   octahedron.position.set(0, centerY, 0);
-
   scene.add(octahedron);
-  // Start Animation
-  animate();
+
   placeOctahedronsNearColumns();
+  animate();
 }
-// Animation loop
 
 function createOctahedronMesh(position) {
   const octahedronGeometry = new THREE.OctahedronGeometry(5, 0); // Size 5, Detail 0
-  const octahedronMaterial = new THREE.MeshStandardMaterial({
-    color: 0xff5733,
-  });
+  const octahedronMaterial = new THREE.MeshStandardMaterial({ color: 0xff5733 });
   const octahedronMesh = new THREE.Mesh(octahedronGeometry, octahedronMaterial);
 
   octahedronMesh.position.set(position.x, position.y, position.z);
@@ -144,7 +137,7 @@ function placeOctahedronsNearColumns() {
     }
   }
 
-  placedIndices.forEach((index) => {
+  placedIndices.forEach(index => {
     const angle = (index / 10) * Math.PI * 2; // Calculate angle based on index
     const columnX = 40 * Math.cos(angle); // Column position (same radius)
     const columnZ = 40 * Math.sin(angle);
@@ -156,17 +149,16 @@ function placeOctahedronsNearColumns() {
     const octahedronPosition = {
       x: columnX + offsetX,
       y: 10, // Adjust height to be visible
-      z: columnZ + offsetZ,
+      z: columnZ + offsetZ
     };
 
     createOctahedronMesh(octahedronPosition);
   });
 }
 
-// Call function after scene initialization
 
+// Animation loop
 function animate() {
-  // Update camera position in a circular motion
   angle += speed;
   camera.position.x = radius * Math.cos(angle);
   camera.position.z = radius * Math.sin(angle);
@@ -178,3 +170,4 @@ function animate() {
 
 // Start the scene
 init();
+
