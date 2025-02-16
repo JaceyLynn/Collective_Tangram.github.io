@@ -40,15 +40,8 @@ directionalLight.shadow.mapSize.height = 512; // default
 directionalLight.shadow.camera.near = 0.5; // default
 directionalLight.shadow.camera.far = 500; // default
 
-const circlegeometry = new THREE.CircleGeometry( 5, 32 ); 
-const circlematerial = new THREE.MeshBasicMaterial( { color: 0xffff00 } ); 
-const floor = new THREE.Mesh( circlegeometry, circlematerial ); 
-  floor.rotateX(-3.14/2);
-  floor.position.set(0,0, 0);
-  scene.add( floor );
-
   // Add a short solid cylinder
-  const cylinderGeometry3 = new THREE.CylinderGeometry(0.5, 0.5, 4, 32);
+  const cylinderGeometry3 = new THREE.CylinderGeometry(20, 20, 0.5, 20);
   const cylinderMaterial3 = new THREE.MeshStandardMaterial({
     color: "#27187E",
     roughness: 0,
@@ -57,9 +50,7 @@ const floor = new THREE.Mesh( circlegeometry, circlematerial );
   cylinder3.position.set(4, -3, 10);
   cylinder3.rotation.z = Math.PI / 4;
   cylinder3.castShadow = true;
-  cylinderGeometry3.rotateX(6);
-  cylinderGeometry3.rotateY(7);
-  cylinderGeometry3.rotateZ(9);
+
   scene.add(cylinder3);
 
   // Add a transparent glass sphere
@@ -74,18 +65,53 @@ const floor = new THREE.Mesh( circlegeometry, circlematerial );
   glassSphere.castShadow = true;
   scene.add(glassSphere);
 
-  // Add ceiling
-  const ringgeometry = new THREE.RingGeometry( 1, 5, 32 ); 
-  const ringMaterial = new THREE.MeshLambertMaterial({
-    color: "#FFFFFF",
-    emissive: "#8A8A8A",
-  });
-  const ceiling = new THREE.Mesh(ringgeometry, ringMaterial);
-  ceiling.rotateX(-3.14/2);
-  ceiling.position.set(0,3, 0);
-  scene.add(ceiling);
+  const shape = new THREE.Shape();
+const outerRadius = 5;
+const innerRadius = 1;
+const segments = 32;
 
- 
+// Create outer ring shape
+shape.absarc(0, 0, 5, 0, Math.PI * 2, false);
+
+// Create inner hole
+const hole = new THREE.Path();
+hole.absarc(0, 0, 1, 0, Math.PI * 2, true);
+shape.holes.push(hole);
+
+// Define extrusion settings
+const extrudeSettings = {
+  depth: 1,  // Adjust this for thickness
+  bevelEnabled: false
+};
+
+// Create extruded geometry
+const extrudedGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+// Create material
+const material = new THREE.MeshLambertMaterial({
+  color: "#FFFFFF",
+  emissive: "#8A8A8A",
+});
+
+// Create mesh
+const extrudedRing = new THREE.Mesh(extrudedGeometry, material);
+extrudedRing.rotateX(-Math.PI / 2);
+extrudedRing.position.set(0, 3, 0);
+
+// Add to scene
+scene.add(extrudedRing);
+
+//   // Add ceiling
+//   const ringgeometry = new THREE.RingGeometry( 1, 5, 32 ); 
+//   const ringMaterial = new THREE.MeshLambertMaterial({
+//     color: "#FFFFFF",
+//     emissive: "#8A8A8A",
+//   });
+//   const ceiling = new THREE.Mesh(ringgeometry, ringMaterial);
+//   ceiling.rotateX(-3.14/2);
+//   ceiling.position.set(0,3, 0);
+//   scene.add(ceiling);
+  
   
   draw();
 }
