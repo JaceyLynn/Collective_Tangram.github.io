@@ -11,7 +11,7 @@ let octahedron, detailLevel;
 function init() {
   // Create a scene
   scene = new THREE.Scene();
-  scene.background = new THREE.Color("rgb(200,100,200)");
+  scene.background = new THREE.Color("#DB7F67");
 
   // Create the renderer
   renderer = new THREE.WebGLRenderer();
@@ -37,7 +37,7 @@ function init() {
 
   // Add a smoother floor
   const cylinderGeometry3 = new THREE.CylinderGeometry(50, 50, 5, 64);
-  const cylinderMaterial3 = new THREE.MeshStandardMaterial({ color: "#27187E", roughness: 0 });
+  const cylinderMaterial3 = new THREE.MeshStandardMaterial({ color: "#3F292B", roughness: 0 });
   const cylinder3 = new THREE.Mesh(cylinderGeometry3, cylinderMaterial3);
   cylinder3.position.set(0, 0, 0);
   cylinder3.castShadow = true;
@@ -52,7 +52,7 @@ function init() {
 
   const extrudeSettings = { depth: 2, bevelEnabled: false, curveSegments: 64 };
   const extrudedGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  const material = new THREE.MeshLambertMaterial({ color: "#FFFFFF", emissive: "#8A8A8A" });
+  const material = new THREE.MeshLambertMaterial({ color: "#DBBEA1", emissive: "#8A8A8A" });
   const extrudedRing = new THREE.Mesh(extrudedGeometry, material);
   extrudedRing.rotateX(-Math.PI / 2);
   extrudedRing.position.set(0, 20, 0);
@@ -69,7 +69,7 @@ function init() {
     const z = columnradius * Math.sin(angle);
 
     const columnGeometry = new THREE.CylinderGeometry(2, 2, columnHeight, 64);
-    const columnMaterial = new THREE.MeshStandardMaterial({ color: "#FFD700", roughness: 0.3 });
+    const columnMaterial = new THREE.MeshStandardMaterial({ color: "#A37B73", roughness: 0.3 });
 
     const column = new THREE.Mesh(columnGeometry, columnMaterial);
     column.position.set(x, columnHeight / 2, z);
@@ -80,7 +80,7 @@ function init() {
   }
 
     const octahedronGeometry = new THREE.OctahedronGeometry(10, 5);
-  const octahedronMaterial = new THREE.MeshStandardMaterial({ color: "#FF5733", wireframe: true });
+  const octahedronMaterial = new THREE.MeshStandardMaterial({ color: "#D34F73", wireframe: true });
 
   octahedron = new THREE.Mesh(octahedronGeometry, octahedronMaterial);
   octahedron.position.set(0, centerY, 0);
