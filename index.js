@@ -62,7 +62,7 @@ function init() {
   // Add smoother columns
   const columnCount = 10;
   const columnHeight = 20;
-  const columnradius = 40;
+  const columnradius = 45;
 
   for (let i = 0; i < columnCount; i++) {
     const angle = (i / columnCount) * Math.PI * 2;
@@ -80,14 +80,10 @@ function init() {
     scene.add(column);
   }
 
-  // Add Octahedron in the center
-  createOctahedron();
-
   // Start Animation
   animate();
 }
 
-// Function to create an Octahedron (initial setup)
 function createOctahedron() {
   const octahedronGeometry = new THREE.OctahedronGeometry(5, detailLevel);
   const octahedronMaterial = new THREE.MeshStandardMaterial({ color: "#FF5733", wireframe: true });
@@ -98,33 +94,43 @@ function createOctahedron() {
   scene.add(octahedron);
 }
 
-// Function to update Octahedron's detail
+// Function to update Octahedron's detail dynamically
 function updateOctahedronDetail() {
-  // Change the detail level smoothly
+  // Smoothly change detail level between 0 and 5
   if (detailIncreasing) {
-    detailLevel += 0.5;
+    detailLevel += 0.05;
     if (detailLevel >= 5) detailIncreasing = false;
   } else {
-    detailLevel -= 0.5;
+    detailLevel -= 0.05;
     if (detailLevel <= 0) detailIncreasing = true;
   }
 
   detailLevel = Math.round(detailLevel); // Keep it an integer
 
-  // Update Octahedron geometry instead of removing & recreating
-  octahedron.geometry.dispose(); // Free memory
-  octahedron.geometry = new THREE.OctahedronGeometry(5, detailLevel);
+  // Dispose of old geometry and replace with new one
+  if (octahedron) {
+    scene.remove(octahedron); // Remove old mesh
+    octahedron.geometry.dispose(); // Free memory
+    octahedron.material.dispose(); // Dispose of material if necessary
+  }
+
+  // Create new Octahedron with updated detail
+  const newGeometry = new THREE.OctahedronGeometry(5, detailLevel);
+  octahedron = new THREE.Mesh(newGeometry, new THREE.MeshStandardMaterial({ color: "#FF5733", wireframe: true }));
+
+  octahedron.position.set(0, centerY, 0);
+  scene.add(octahedron);
 }
 
-// Function to animate camera and update Octahedron
+// Animation loop
 function animate() {
   requestAnimationFrame(animate);
 
-  // Camera Rotation
+  // Update camera position in a circular motion
   angle += speed;
   camera.position.x = radius * Math.cos(angle);
   camera.position.z = radius * Math.sin(angle);
-  camera.lookAt(0, centerY/2, 0);
+  camera.lookAt(0, centerY, 0);
 
   // Update Octahedron detail level
   updateOctahedronDetail();
