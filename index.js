@@ -56,22 +56,22 @@ function init() {
     // Create texture loader
   let textureLoader = new THREE.TextureLoader();
 
-  let bgtexture= textureLoader.load('https://cdn.glitch.global/bbff0782-01b5-4e47-b4f2-98c6609dc7a1/TCom_NorwayHighlandsA_2K_hdri_sphere_tone.jpg?v=1739044434741')
+  let bgtexture= textureLoader.load('https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/TCom_HDRPanorama061_Forest_A_2K_hdri_sphere_tone.jpg?v=1739769817729')
   bgtexture.mapping = THREE.EquirectangularReflectionMapping;
   scene.background =bgtexture;
   
   // Load plane textures
   let floorTexture = textureLoader.load(
-    "https://cdn.glitch.global/bbff0782-01b5-4e47-b4f2-98c6609dc7a1/TCom_Ground_Grass03_2x2_512_albedo011.jpg?v=1739044854933"
+    "https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/TCom_Tiles_Floor2_1.6x1.6_1K_albedo.png?v=1739769467095"
   );
   let normalMap = textureLoader.load(
-    "https://cdn.glitch.global/bbff0782-01b5-4e47-b4f2-98c6609dc7a1/TCom_Ground_Grass03_2x2_512_normal008.jpg?v=1739045672422"
+    "https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/TCom_Tiles_Floor2_1.6x1.6_1K_normal.png?v=1739769474048"
   );
   let roughnessMap = textureLoader.load(
-    "https://cdn.glitch.global/bbff0782-01b5-4e47-b4f2-98c6609dc7a1/TCom_Ground_Grass03_2x2_512_roughness007.jpg?v=1739045686666"
+    "https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/TCom_Tiles_Floor2_1.6x1.6_1K_roughness.png?v=1739769470487"
   );
   let heightMap = textureLoader.load(
-    "https://cdn.glitch.global/bbff0782-01b5-4e47-b4f2-98c6609dc7a1/TCom_Ground_Grass03_2x2_512_height.jpg?v=1739045796255"
+    "https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/TCom_Tiles_Floor2_1.6x1.6_1K_height.png?v=1739769476653"
   );
 
   // Set texture properties
@@ -80,16 +80,20 @@ function init() {
   roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
   heightMap.wrapS = heightMap.wrapT = THREE.RepeatWrapping;
 
-  floorTexture.repeat.set(5, 50);
-  normalMap.repeat.set(5, 50);
-  roughnessMap.repeat.set(5, 50);
-  heightMap.repeat.set(5, 50);
+  floorTexture.repeat.set(50, 100);
+  normalMap.repeat.set(50, 100);
+  roughnessMap.repeat.set(50, 100);
+  heightMap.repeat.set(50, 100);
   
   // Add a floor that receives shadows
   const floorGeometry = new THREE.CylinderGeometry(50, 50, 5, 64);
   const floorMaterial = new THREE.MeshStandardMaterial({
     color: "#3F292B",
-    roughness: 0,
+        map: floorTexture,
+    normalMap: normalMap,
+    roughnessMap: roughnessMap,
+    displacementMap: heightMap,
+    displacementScale: 2,
   });
   const floor = new THREE.Mesh(floorGeometry, floorMaterial);
   floor.position.set(0, 0, 0);
