@@ -53,6 +53,38 @@ function init() {
 
   scene.add(directionalLight);
 
+    // Create texture loader
+  let textureLoader = new THREE.TextureLoader();
+
+  let bgtexture= textureLoader.load('https://cdn.glitch.global/bbff0782-01b5-4e47-b4f2-98c6609dc7a1/TCom_NorwayHighlandsA_2K_hdri_sphere_tone.jpg?v=1739044434741')
+  bgtexture.mapping = THREE.EquirectangularReflectionMapping;
+  scene.background =bgtexture;
+  
+  // Load plane textures
+  let floorTexture = textureLoader.load(
+    "https://cdn.glitch.global/bbff0782-01b5-4e47-b4f2-98c6609dc7a1/TCom_Ground_Grass03_2x2_512_albedo011.jpg?v=1739044854933"
+  );
+  let normalMap = textureLoader.load(
+    "https://cdn.glitch.global/bbff0782-01b5-4e47-b4f2-98c6609dc7a1/TCom_Ground_Grass03_2x2_512_normal008.jpg?v=1739045672422"
+  );
+  let roughnessMap = textureLoader.load(
+    "https://cdn.glitch.global/bbff0782-01b5-4e47-b4f2-98c6609dc7a1/TCom_Ground_Grass03_2x2_512_roughness007.jpg?v=1739045686666"
+  );
+  let heightMap = textureLoader.load(
+    "https://cdn.glitch.global/bbff0782-01b5-4e47-b4f2-98c6609dc7a1/TCom_Ground_Grass03_2x2_512_height.jpg?v=1739045796255"
+  );
+
+  // Set texture properties
+  floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+  normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
+  roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
+  heightMap.wrapS = heightMap.wrapT = THREE.RepeatWrapping;
+
+  floorTexture.repeat.set(5, 50);
+  normalMap.repeat.set(5, 50);
+  roughnessMap.repeat.set(5, 50);
+  heightMap.repeat.set(5, 50);
+  
   // Add a floor that receives shadows
   const floorGeometry = new THREE.CylinderGeometry(50, 50, 5, 64);
   const floorMaterial = new THREE.MeshStandardMaterial({
