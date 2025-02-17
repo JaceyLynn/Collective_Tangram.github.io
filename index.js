@@ -162,7 +162,7 @@ function animateModel() {
   model.position.x += modelData.speedX;
   model.position.z += modelData.speedZ;
 
-  // Check boundaries (keep inside the floor cylinder area)
+  // keep inside the floor cylinder area
   let distance = Math.sqrt(model.position.x ** 2 + model.position.z ** 2);
   if (distance > 35) {
     let angle = Math.atan2(model.position.z, model.position.x);
@@ -175,13 +175,13 @@ function animateModel() {
   }
 }
 
-let time = 0; // Time variable to control the animation speed
+let pulsateTime = 0; // Time variable to control the animation speed
 
 function animate() {
-  time += 0.01; // Adjust speed of pulsation
+  pulsateTime += 0.01; // Adjust speed of pulsation
 
   // Animate octahedron scale
-  let scaleFactor = 1 + 0.3 * Math.sin(time); // Scale varies between 0.7 and 1.3
+  let scaleFactor = 1 + 0.3 * Math.sin(pulsateTime); // Scale varies between 0.7 and 1.3
   octahedron.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
   angle += rotationSpeed;
@@ -189,7 +189,7 @@ function animate() {
   camera.position.z = radius * Math.sin(angle);
   camera.lookAt(0, 0, 0);
 
-  animateModel(); // Move model every frame
+  animateModel();
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
