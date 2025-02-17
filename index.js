@@ -7,6 +7,7 @@ let angle = 0;
 const radius = 40;
 const centerY = 20;
 const speed = 0.01;
+let octahedron;
 
 function init() {
   scene = new THREE.Scene();
@@ -35,10 +36,10 @@ function init() {
   let model;
 
   function loadModel(position) {
-    loader.load('https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/Cute%20Cartoon%20Character.glb?v=1739771521285', function (gltf) {
+    loader.load('https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/girl_g.glb?v=1739812235439', function (gltf) {
       model = gltf.scene;
-      model.position.set(position.x, position.y, position.z);
-      model.scale.set(2, 2, 2);
+      model.position.set(position.x, position.y+1, position.z);
+      model.scale.set(10, 10, 10);
       scene.add(model);
     }, undefined, function (error) {
       console.error(error);
@@ -70,10 +71,10 @@ function init() {
   const ceiling = new THREE.Mesh(extrudedGeometry, ceilingMaterial);
   ceiling.rotateX(-Math.PI / 2);
   ceiling.position.set(0, 20, 0);
-  ceiling.castShadow = true; // ✅ Ceiling casts shadows
+  ceiling.castShadow = true; 
   scene.add(ceiling);
 
-  const columnCount = 10;
+  const columnCount = 7;
   const columnHeight = 20;
   const columnradius = 45;
 
@@ -116,12 +117,31 @@ function init() {
       loadModel(modelPosition);
     });
   }
+  
+    // Add octahedron
+  const octahedronGeometry = new THREE.OctahedronGeometry(10, 5);
+  const octahedronMaterial = new THREE.MeshStandardMaterial({
+    color: "#D34F73",
+    wireframe: true,
+  });
+
+  octahedron = new THREE.Mesh(octahedronGeometry, octahedronMaterial);
+  octahedron.position.set(0, centerY, 0);
+  scene.add(octahedron);
 
   placeModelsNearColumns();
   animate();
 }
 
+let time = 0; // Time variable to control the animation speed
+
 function animate() {
+  time += 0.01; // Adjust speed of pulsation
+
+  // Animate octahedron scale
+  let scaleFactor = 1 + 0.3 * Math.sin(time); // Scale varies between 0.7 and 1.3
+  octahedron.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
   angle += speed;
   camera.position.x = radius * Math.cos(angle);
   camera.position.z = radius * Math.sin(angle);
