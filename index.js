@@ -35,10 +35,10 @@ function init() {
   let model;
 
   function loadModel(position) {
-    loader.load('https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/Cute%20Cartoon%20Character.obj?v=1739771096050', function (gltf) {
+    loader.load('https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/Cute%20Cartoon%20Character.glb?v=1739771521285', function (gltf) {
       model = gltf.scene;
       model.position.set(position.x, position.y, position.z);
-      model.scale.set(5, 5, 5);
+      model.scale.set(2, 2, 2);
       scene.add(model);
     }, undefined, function (error) {
       console.error(error);
@@ -56,6 +56,22 @@ function init() {
   floor.position.set(0, 0, 0);
   floor.receiveShadow = true;
   scene.add(floor);
+  
+    // Create the ceiling that casts shadows
+  const shape = new THREE.Shape();
+  shape.absarc(0, 0, 50, 0, Math.PI * 2, false);
+  const hole = new THREE.Path();
+  hole.absarc(0, 0, 30, 0, Math.PI * 2, true);
+  shape.holes.push(hole);
+
+  const extrudeSettings = { depth: 2, bevelEnabled: false, curveSegments: 64 };
+  const extrudedGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  const ceilingMaterial = new THREE.MeshStandardMaterial({ color: "#DBBEA1" });
+  const ceiling = new THREE.Mesh(extrudedGeometry, ceilingMaterial);
+  ceiling.rotateX(-Math.PI / 2);
+  ceiling.position.set(0, 20, 0);
+  ceiling.castShadow = true; // ✅ Ceiling casts shadows
+  scene.add(ceiling);
 
   const columnCount = 10;
   const columnHeight = 20;
