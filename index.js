@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 let scene, renderer, camera;
 let angle = 0;
@@ -33,11 +34,11 @@ function init() {
   let controls = new OrbitControls(camera, renderer.domElement);
 
   // Add ambient light
-  const ambientLight = new THREE.AmbientLight(0xffffff, 3);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 2);
   scene.add(ambientLight);
 
   // Add directional light with shadow properties
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
   directionalLight.position.set(10, 40, 10);
   directionalLight.castShadow = true; // ✅ Enable shadows
 
@@ -80,10 +81,10 @@ function init() {
   roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
   heightMap.wrapS = heightMap.wrapT = THREE.RepeatWrapping;
 
-  floorTexture.repeat.set(50, 100);
-  normalMap.repeat.set(50, 100);
-  roughnessMap.repeat.set(50, 100);
-  heightMap.repeat.set(50, 100);
+  floorTexture.repeat.set(10, 10);
+  normalMap.repeat.set(10, 10);
+  roughnessMap.repeat.set(10, 10);
+  heightMap.repeat.set(10, 10);
   
   // Add a floor that receives shadows
   const floorGeometry = new THREE.CylinderGeometry(50, 50, 5, 64);
