@@ -1,13 +1,14 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 let scene, renderer, camera;
 let angle = 0;
 const radius = 40;
 const centerY = 20;
-const speed = 0.01;
+const rotationSpeed = 0.005;
 let octahedron;
+let modelData = null; // Store the single model's data
 
 function init() {
   scene = new THREE.Scene();
@@ -32,22 +33,10 @@ function init() {
   directionalLight.castShadow = true;
   scene.add(directionalLight);
 
-  const loader = new GLTFLoader();
-  let model;
-
-  function loadModel(position) {
-    loader.load('https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/girl_g.glb?v=1739812235439', function (gltf) {
-      model = gltf.scene;
-      model.position.set(position.x, position.y+1, position.z);
-      model.scale.set(10, 10, 10);
-      scene.add(model);
-    }, undefined, function (error) {
-      console.error(error);
-    });
-  }
-
   let textureLoader = new THREE.TextureLoader();
-  let bgtexture = textureLoader.load('https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/TCom_HDRPanorama061_Forest_A_2K_hdri_sphere_tone.jpg?v=1739769817729');
+  let bgtexture = textureLoader.load(
+    "https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/TCom_NorwayForest_2K_hdri_sphere_tone.jpg?v=1739813233155"
+  );
   bgtexture.mapping = THREE.EquirectangularReflectionMapping;
   scene.background = bgtexture;
 
@@ -57,8 +46,7 @@ function init() {
   floor.position.set(0, 0, 0);
   floor.receiveShadow = true;
   scene.add(floor);
-  
-    // Create the ceiling that casts shadows
+
   const shape = new THREE.Shape();
   shape.absarc(0, 0, 50, 0, Math.PI * 2, false);
   const hole = new THREE.Path();
@@ -71,17 +59,17 @@ function init() {
   const ceiling = new THREE.Mesh(extrudedGeometry, ceilingMaterial);
   ceiling.rotateX(-Math.PI / 2);
   ceiling.position.set(0, 20, 0);
-  ceiling.castShadow = true; 
+  ceiling.castShadow = true;
   scene.add(ceiling);
 
   const columnCount = 7;
   const columnHeight = 20;
-  const columnradius = 45;
+  const columnRadius = 45;
 
   for (let i = 0; i < columnCount; i++) {
     const angle = (i / columnCount) * Math.PI * 2;
-    const x = columnradius * Math.cos(angle);
-    const z = columnradius * Math.sin(angle);
+    const x = columnRadius * Math.cos(angle);
+    const z = columnRadius * Math.sin(angle);
 
     const columnGeometry = new THREE.CylinderGeometry(2, 2, columnHeight, 64);
     const columnMaterial = new THREE.MeshStandardMaterial({ color: "#A37B73" });
@@ -92,33 +80,7 @@ function init() {
     scene.add(column);
   }
 
-  function placeModelsNearColumns() {
-    const placedIndices = new Set();
-    while (placedIndices.size < 2) {
-      let randomIndex = Math.floor(Math.random() * 10);
-      if (!placedIndices.has(randomIndex)) {
-        placedIndices.add(randomIndex);
-      }
-    }
-
-    placedIndices.forEach(index => {
-      const angle = (index / 10) * Math.PI * 2;
-      const columnX = 40 * Math.cos(angle);
-      const columnZ = 40 * Math.sin(angle);
-      const offsetX = (Math.random() - 0.5) * 5;
-      const offsetZ = (Math.random() - 0.5) * 5;
-
-      const modelPosition = {
-        x: columnX + offsetX,
-        y: 5,
-        z: columnZ + offsetZ
-      };
-
-      loadModel(modelPosition);
-    });
-  }
-  
-    // Add octahedron
+  // Add octahedron
   const octahedronGeometry = new THREE.OctahedronGeometry(10, 5);
   const octahedronMaterial = new THREE.MeshStandardMaterial({
     color: "#D34F73",
@@ -129,8 +91,61 @@ function init() {
   octahedron.position.set(0, centerY, 0);
   scene.add(octahedron);
 
-  placeModelsNearColumns();
+  placeModelInsideFloor();
   animate();
+}
+
+function placeModelInsideFloor() {
+  const loader = new GLTFLoader();
+  
+  loader.load(
+    "https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/girl_g.glb?v=1739812235439",
+    function (gltf) {
+      let model = gltf.scene;
+
+      // Random initial position inside the floor cylinder (radius 35)
+      let angle = Math.random() * Math.PI * 2;
+      let radius = Math.random() * 35; // Stay within radius 35
+      let x = radius * Math.cos(angle);
+      let z = radius * Math.sin(angle);
+
+      model.position.set(x, 5, z);
+      model.scale.set(10, 10, 10);
+      scene.add(model);
+
+      modelData = {
+        mesh: model,
+        speedX: (Math.random() - 0.5) * 0.2, // Random X speed
+        speedZ: (Math.random() - 0.5) * 0.2, // Random Z speed
+      };
+    },
+    undefined,
+    function (error) {
+      console.error(error);
+    }
+  );
+}
+
+function animateModel() {
+  if (!modelData) return; // If model isn't loaded yet, skip
+
+  let model = modelData.mesh;
+
+  // Update position with its speed
+  model.position.x += modelData.speedX;
+  model.position.z += modelData.speedZ;
+
+  // Check boundaries (keep inside the floor cylinder area)
+  let distance = Math.sqrt(model.position.x ** 2 + model.position.z ** 2);
+  if (distance > 35) {
+    let angle = Math.atan2(model.position.z, model.position.x);
+    model.position.x = 35 * Math.cos(angle);
+    model.position.z = 35 * Math.sin(angle);
+
+    // Change direction after hitting boundary
+    modelData.speedX *= -1;
+    modelData.speedZ *= -1;
+  }
 }
 
 let time = 0; // Time variable to control the animation speed
@@ -142,15 +157,18 @@ function animate() {
   let scaleFactor = 1 + 0.3 * Math.sin(time); // Scale varies between 0.7 and 1.3
   octahedron.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
-  angle += speed;
+  angle += rotationSpeed;
   camera.position.x = radius * Math.cos(angle);
   camera.position.z = radius * Math.sin(angle);
-  camera.lookAt(0, centerY, 0);
+  camera.lookAt(0, 0, 0);
+
+  animateModel(); // Move model every frame
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
 
 init();
+
 
 
