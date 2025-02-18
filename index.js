@@ -18,6 +18,8 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+
   document.body.appendChild(renderer.domElement);
 
   camera = new THREE.PerspectiveCamera(
@@ -33,9 +35,19 @@ function init() {
   const ambientLight = new THREE.AmbientLight(0xffffff, 2);
   scene.add(ambientLight);
   const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
-  directionalLight.position.set(10, 40, 10);
+  directionalLight.position.set(10, 70, 10);
   directionalLight.castShadow = true;
   scene.add(directionalLight);
+
+  directionalLight.shadow.mapSize.width = 2048;
+directionalLight.shadow.mapSize.height = 2048;
+directionalLight.shadow.camera.near = 0.5;
+directionalLight.shadow.camera.far = 200;
+    //defines the boundaries of the shadow camera’s frustum (viewing box of shadows).
+directionalLight.shadow.camera.left = -50;
+directionalLight.shadow.camera.right = 50;
+directionalLight.shadow.camera.top = 50;
+directionalLight.shadow.camera.bottom = -50;
 
   // texture loader
   let textureLoader = new THREE.TextureLoader();
