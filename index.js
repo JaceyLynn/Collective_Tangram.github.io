@@ -6,7 +6,7 @@ let scene, renderer, camera;
 let angle = 0;
 const radius = 40;
 const centerY = 20;
-const rotationSpeed = 0.005;
+const rotationSpeed = 0.002;
 let controls;
 let imageMeshes = [];
 let frameCount = 0;
@@ -29,13 +29,13 @@ function init() {
     1000
   );
   camera.position.set(20, 0, 20);
-  camera.lookAt(0,0,0)
+  camera.lookAt(0, 0, 0);
 
   // add orbit controls so we can navigate our scene while testing
   // controls = new OrbitControls(camera, myRenderer.domElement);
   controls = new FirstPersonControls(scene, camera, renderer);
   // add lights
-  const ambientLight = new THREE.AmbientLight(0xffffff, 2);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
   const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
   directionalLight.position.set(10, 70, 10);
@@ -51,8 +51,8 @@ function init() {
   directionalLight.shadow.camera.right = 50;
   directionalLight.shadow.camera.top = 50;
   directionalLight.shadow.camera.bottom = -50;
-  
-    // addArtwork();
+
+  // addArtwork();
   addArtworkToSpace();
 
   // texture loader
@@ -109,27 +109,55 @@ function init() {
   shape.holes.push(hole);
   const extrudeSettings = { depth: 2, bevelEnabled: false, curveSegments: 64 };
   const extrudedGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  const ceilingMaterial = new THREE.MeshStandardMaterial({ color: "#F2E863" });
+  const ceilingMaterial = new THREE.MeshStandardMaterial({ color: "#F7A072" });
   const ceiling = new THREE.Mesh(extrudedGeometry, ceilingMaterial);
   ceiling.rotateX(-Math.PI / 2);
   ceiling.position.set(0, 15, 0);
   ceiling.castShadow = true;
   scene.add(ceiling);
-
-  //add columns
   const columnCount = 7;
   const columnHeight = 20;
   const columnRadius = 45;
+  let columns = [];
+
+  // Create columns
   for (let i = 0; i < columnCount; i++) {
     const angle = (i / columnCount) * Math.PI * 2;
     const x = columnRadius * Math.cos(angle);
     const z = columnRadius * Math.sin(angle);
+
     const columnGeometry = new THREE.CylinderGeometry(2, 2, columnHeight, 64);
     const columnMaterial = new THREE.MeshStandardMaterial({ color: "#F7A072" });
     const column = new THREE.Mesh(columnGeometry, columnMaterial);
-    column.position.set(x, columnHeight / 2-5, z);
+    column.position.set(x, columnHeight / 2 - 5, z);
     column.castShadow = true;
     scene.add(column);
+
+    columns.push({ x, z }); // Store column positions
+  }
+
+  // Add ceiling lights between columns
+  for (let i = 0; i < columnCount; i++) {
+    const nextIndex = (i + 1) % columnCount;
+
+    // Compute the midpoint between two adjacent columns
+    const midX = (columns[i].x + columns[nextIndex].x) / 2;
+    const midZ = (columns[i].z + columns[nextIndex].z) / 2;
+    const lightHeight = 18; // Adjust light height
+
+    const ceilingLight = new THREE.DirectionalLight(0xffffff, 1);
+    ceilingLight.position.set(midX, lightHeight, midZ);
+    ceilingLight.target.position.set(midX, 0, midZ); // Point towards the center
+    ceilingLight.castShadow = true;
+
+    // Improve shadow quality
+    ceilingLight.shadow.mapSize.width = 2048;
+    ceilingLight.shadow.mapSize.height = 2048;
+    ceilingLight.shadow.camera.near = 0.5;
+    ceilingLight.shadow.camera.far = 100;
+
+    scene.add(ceilingLight);
+    scene.add(ceilingLight.target);
   }
 
   draw();
@@ -149,8 +177,10 @@ async function addArtworkToSpace() {
     let angle2 = ((i + 1) / columnCount) * Math.PI * 2; // Next column angle
 
     // Calculate midpoints between columns
-    let midX = (columnRadius * Math.cos(angle1) + columnRadius * Math.cos(angle2)) / 2;
-    let midZ = (columnRadius * Math.sin(angle1) + columnRadius * Math.sin(angle2)) / 2;
+    let midX =
+      (columnRadius * Math.cos(angle1) + columnRadius * Math.cos(angle2)) / 2;
+    let midZ =
+      (columnRadius * Math.sin(angle1) + columnRadius * Math.sin(angle2)) / 2;
 
     let imageData = artData[i]; // Get corresponding image data
     let myImageTex = new THREE.TextureLoader().load(imageData.imageUrl);
