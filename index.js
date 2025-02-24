@@ -9,6 +9,7 @@ const centerY = 20;
 const rotationSpeed = 0.005;
 let controls;
 let imageMeshes = [];
+let frameCount = 0;
 
 function init() {
   scene = new THREE.Scene();
@@ -134,13 +135,14 @@ function init() {
   draw();
 }
 
+let artworkGroup = new THREE.Group(); // Create a group for rotating the artworks
+
 async function addArtworkToSpace() {
   let artData = await getArt("horse", 7); // Get 7 images (one per midpoint)
 
   const columnCount = 7;
   const columnRadius = 40;
-  const sphereRadius = 4;
-  let spheres = [];
+  const sphereRadius = 5; // Adjust as needed
 
   for (let i = 0; i < columnCount; i++) {
     let angle1 = (i / columnCount) * Math.PI * 2;
@@ -157,28 +159,20 @@ async function addArtworkToSpace() {
     let sphere = new THREE.Mesh(geo, myMat);
 
     sphere.position.set(midX, 5, midZ); // Adjust height as needed
-    scene.add(sphere);
-    spheres.push(sphere);
+    artworkGroup.add(sphere); // Add the sphere to the group
   }
+
+  scene.add(artworkGroup); // Add the group to the scene
 }
-
-
-// keep track of which frame we are on
-let frameCount = 0;
 
 function draw() {
   controls.update();
-  frameCount = frameCount + 1;
+  frameCount++;
+
+  // Rotate the whole group of artworks around the Y-axis
+  artworkGroup.rotation.y += rotationSpeed;
 
   renderer.render(scene, camera);
-
-  // here we can animate the meshes
-  for (let i = 0; i < imageMeshes.length; i++) {
-    let mesh = imageMeshes[i];
-    mesh.rotateY(0.01);
-  }
-
-  // ask the browser to render another frame when it is ready
   window.requestAnimationFrame(draw);
 }
 
