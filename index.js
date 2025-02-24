@@ -18,7 +18,6 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
   document.body.appendChild(renderer.domElement);
 
   // create our camera
@@ -28,7 +27,7 @@ function init() {
     0.1,
     1000
   );
-  camera.position.set(20, 20, 20);
+  camera.position.set(20, 0, 20);
   camera.lookAt(0,0,0)
 
   // add orbit controls so we can navigate our scene while testing
@@ -97,7 +96,7 @@ function init() {
     displacementScale: 2,
   });
   const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-  floor.position.set(0, 0, 0);
+  floor.position.set(0, -5, 0);
   floor.receiveShadow = true;
   scene.add(floor);
 
@@ -112,7 +111,7 @@ function init() {
   const ceilingMaterial = new THREE.MeshStandardMaterial({ color: "#F2E863" });
   const ceiling = new THREE.Mesh(extrudedGeometry, ceilingMaterial);
   ceiling.rotateX(-Math.PI / 2);
-  ceiling.position.set(0, 20, 0);
+  ceiling.position.set(0, 15, 0);
   ceiling.castShadow = true;
   scene.add(ceiling);
 
@@ -127,55 +126,60 @@ function init() {
     const columnGeometry = new THREE.CylinderGeometry(2, 2, columnHeight, 64);
     const columnMaterial = new THREE.MeshStandardMaterial({ color: "#F7A072" });
     const column = new THREE.Mesh(columnGeometry, columnMaterial);
-    column.position.set(x, columnHeight / 2, z);
+    column.position.set(x, columnHeight / 2-5, z);
     column.castShadow = true;
     scene.add(column);
   }
 
-  animate();
+  draw();
 }
 
-async function addArtworkToSpace(){
-  let artData = await getArt("horse", 10);
-  
-  // we should have access to the artData from the API
-  console.log(artData,length);
-  let count =0;
-  //
-  for (let i = 0; i < 3; i++){
-    for (let j = 0; j < 3; j++){
-    count +=1;
-      
-    let info = artData[count];
-     
-    let url = info.imageUrl;
-    let title = info.title;
-    
-    console.log(url);
-    console.log(title);
-      
-    // create our image texture
-    let myImageTex = new THREE.TextureLoader().load(url);
-    let myMat = new THREE.MeshBasicMaterial({map: myImageTex});
-    let geo = new THREE.BoxGeometry(1,1,1);
-    let mesh = new THREE.Mesh(geo,myMat);
-    mesh.position.set(i * 2, j*2, 3);
-    scene.add(mesh);
-    }
+async function addArtworkToSpace() {
+  let artData = await getArt("horse", 7); // Get 7 images (one per midpoint)
+
+  const columnCount = 7;
+  const columnRadius = 40;
+  const sphereRadius = 4;
+  let spheres = [];
+
+  for (let i = 0; i < columnCount; i++) {
+    let angle1 = (i / columnCount) * Math.PI * 2;
+    let angle2 = ((i + 1) / columnCount) * Math.PI * 2; // Next column angle
+
+    // Calculate midpoints between columns
+    let midX = (columnRadius * Math.cos(angle1) + columnRadius * Math.cos(angle2)) / 2;
+    let midZ = (columnRadius * Math.sin(angle1) + columnRadius * Math.sin(angle2)) / 2;
+
+    let imageData = artData[i]; // Get corresponding image data
+    let myImageTex = new THREE.TextureLoader().load(imageData.imageUrl);
+    let myMat = new THREE.MeshBasicMaterial({ map: myImageTex });
+    let geo = new THREE.SphereGeometry(sphereRadius, 32, 16);
+    let sphere = new THREE.Mesh(geo, myMat);
+
+    sphere.position.set(midX, 5, midZ); // Adjust height as needed
+    scene.add(sphere);
+    spheres.push(sphere);
   }
 }
+
 
 // keep track of which frame we are on
 let frameCount = 0;
 
-function animate() {
-  // angle += rotationSpeed;
-  // camera.position.x = radius * Math.cos(angle);
-  // camera.position.z = radius * Math.sin(angle);
-  // camera.lookAt(0, 0, 0);
+function draw() {
+  controls.update();
+  frameCount = frameCount + 1;
 
   renderer.render(scene, camera);
-  requestAnimationFrame(animate);
+
+  // here we can animate the meshes
+  for (let i = 0; i < imageMeshes.length; i++) {
+    let mesh = imageMeshes[i];
+    mesh.rotateY(0.01);
+  }
+
+  // ask the browser to render another frame when it is ready
+  window.requestAnimationFrame(draw);
 }
 
 init();
