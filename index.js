@@ -37,7 +37,7 @@ function init() {
   // add lights
   const ambientLight = new THREE.AmbientLight(0xffffff, 1);
   scene.add(ambientLight);
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0);
   directionalLight.position.set(10, 70, 10);
   directionalLight.castShadow = true;
   scene.add(directionalLight);
@@ -147,7 +147,7 @@ function init() {
 
     const ceilingLight = new THREE.DirectionalLight(0xffffff, 1);
     ceilingLight.position.set(midX, lightHeight, midZ);
-    ceilingLight.target.position.set(midX, 0, midZ); // Point towards the center
+    ceilingLight.target.position.set(midX, 20, midZ); // Point towards the center
     ceilingLight.castShadow = true;
 
     // Improve shadow quality
