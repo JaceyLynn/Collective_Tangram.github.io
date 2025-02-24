@@ -13,7 +13,7 @@ let frameCount = 0;
 
 function init() {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color("#DB7F67");
+  scene.background = new THREE.Color("#C4D6B0");
 
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -35,9 +35,9 @@ function init() {
   // controls = new OrbitControls(camera, myRenderer.domElement);
   controls = new FirstPersonControls(scene, camera, renderer);
   // add lights
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1);
   scene.add(ambientLight);
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
   directionalLight.position.set(10, 70, 10);
   directionalLight.castShadow = true;
   scene.add(directionalLight);
@@ -58,11 +58,11 @@ function init() {
   // texture loader
   let textureLoader = new THREE.TextureLoader();
   // Load background textures
-  let bgtexture = textureLoader.load(
-    "https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/TCom_NorwayForest_2K_hdri_sphere_tone.jpg?v=1739813233155"
-  );
-  bgtexture.mapping = THREE.EquirectangularReflectionMapping;
-  scene.background = bgtexture;
+  // let bgtexture = textureLoader.load(
+  //   "https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/TCom_NorwayForest_2K_hdri_sphere_tone.jpg?v=1739813233155"
+  // );
+  // bgtexture.mapping = THREE.EquirectangularReflectionMapping;
+  // scene.background = bgtexture;
   // Load floor textures
   let floorTexture = textureLoader.load(
     "https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/TCom_Tiles_Floor2_1.6x1.6_1K_albedo.png?v=1739769467095"
@@ -109,7 +109,7 @@ function init() {
   shape.holes.push(hole);
   const extrudeSettings = { depth: 2, bevelEnabled: false, curveSegments: 64 };
   const extrudedGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  const ceilingMaterial = new THREE.MeshStandardMaterial({ color: "#F7A072" });
+  const ceilingMaterial = new THREE.MeshStandardMaterial({ color: "#FF993A" });
   const ceiling = new THREE.Mesh(extrudedGeometry, ceilingMaterial);
   ceiling.rotateX(-Math.PI / 2);
   ceiling.position.set(0, 15, 0);
@@ -127,7 +127,7 @@ function init() {
     const z = columnRadius * Math.sin(angle);
 
     const columnGeometry = new THREE.CylinderGeometry(2, 2, columnHeight, 64);
-    const columnMaterial = new THREE.MeshStandardMaterial({ color: "#F7A072" });
+    const columnMaterial = new THREE.MeshStandardMaterial({ color: "#FF993A" });
     const column = new THREE.Mesh(columnGeometry, columnMaterial);
     column.position.set(x, columnHeight / 2 - 5, z);
     column.castShadow = true;
