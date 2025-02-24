@@ -1,14 +1,14 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { getArt } from "./getart.js";
+import { FirstPersonControls } from "./firstperson.js";
 
 let scene, renderer, camera;
 let angle = 0;
 const radius = 40;
 const centerY = 20;
 const rotationSpeed = 0.005;
-let octahedron;
-let modelData;
+let controls;
+let imageMeshes = [];
 
 function init() {
   scene = new THREE.Scene();
@@ -19,18 +19,21 @@ function init() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-
   document.body.appendChild(renderer.domElement);
 
+  // create our camera
   camera = new THREE.PerspectiveCamera(
-    75,
+    60,
     window.innerWidth / window.innerHeight,
     0.1,
     1000
   );
-  camera.position.set(60, 20, 0);
-  //orbit control
-  let controls = new OrbitControls(camera, renderer.domElement);
+  camera.position.set(20, 20, 20);
+  camera.lookAt(0,0,0)
+
+  // add orbit controls so we can navigate our scene while testing
+  // controls = new OrbitControls(camera, myRenderer.domElement);
+  controls = new FirstPersonControls(scene, camera, renderer);
   // add lights
   const ambientLight = new THREE.AmbientLight(0xffffff, 2);
   scene.add(ambientLight);
@@ -40,14 +43,17 @@ function init() {
   scene.add(directionalLight);
 
   directionalLight.shadow.mapSize.width = 2048;
-directionalLight.shadow.mapSize.height = 2048;
-directionalLight.shadow.camera.near = 0.5;
-directionalLight.shadow.camera.far = 200;
-    //defines the boundaries of the shadow camera’s frustum (viewing box of shadows).
-directionalLight.shadow.camera.left = -50;
-directionalLight.shadow.camera.right = 50;
-directionalLight.shadow.camera.top = 50;
-directionalLight.shadow.camera.bottom = -50;
+  directionalLight.shadow.mapSize.height = 2048;
+  directionalLight.shadow.camera.near = 0.5;
+  directionalLight.shadow.camera.far = 200;
+  //defines the boundaries of the shadow camera’s frustum (viewing box of shadows).
+  directionalLight.shadow.camera.left = -50;
+  directionalLight.shadow.camera.right = 50;
+  directionalLight.shadow.camera.top = 50;
+  directionalLight.shadow.camera.bottom = -50;
+  
+    // addArtwork();
+  addArtworkToSpace();
 
   // texture loader
   let textureLoader = new THREE.TextureLoader();
@@ -94,7 +100,7 @@ directionalLight.shadow.camera.bottom = -50;
   floor.position.set(0, 0, 0);
   floor.receiveShadow = true;
   scene.add(floor);
-  
+
   //create ceiling
   const shape = new THREE.Shape();
   shape.absarc(0, 0, 50, 0, Math.PI * 2, false);
@@ -126,82 +132,47 @@ directionalLight.shadow.camera.bottom = -50;
     scene.add(column);
   }
 
-  // Add center octahedron
-  const octahedronGeometry = new THREE.OctahedronGeometry(10, 5);
-  const octahedronMaterial = new THREE.MeshStandardMaterial({
-    color: "#61E8E1",
-    wireframe: true,
-  });
-  octahedron = new THREE.Mesh(octahedronGeometry, octahedronMaterial);
-  octahedron.position.set(0, centerY, 0);
-  scene.add(octahedron);
-
-  //call moving functions
-  placeModel();
   animate();
 }
 
-function placeModel() {
-  const loader = new GLTFLoader();
-  loader.load(
-    "https://cdn.glitch.global/094f10a3-743b-4134-bdd8-59335ac7f8ed/girl_g.glb?v=1739812235439",
-    function (gltf) {
-      let model = gltf.scene;
-      // Random position inside the floor
-      let angle = Math.random() * Math.PI * 2;
-      let radius = Math.random() * 35;
-      let x = radius * Math.cos(angle);
-      let z = radius * Math.sin(angle);
-      model.position.set(x, 9, z);
-      model.scale.set(10, 10, 10);
-      scene.add(model);
-      modelData = {
-        mesh: model,
-        speedX: (Math.random() - 0.5) * 0.1, 
-        speedZ: (Math.random() - 0.5) * 0.1, 
-      };
-    },
-
-  );
-}
-
-function animateModel() {
-  if (!modelData) return; // If model isn't loaded yet, skip
-
-  let model = modelData.mesh;
-
-  // Update position with its speed
-  model.position.x += modelData.speedX;
-  model.position.z += modelData.speedZ;
-
-  // keep inside the floor cylinder area
-  let distance = Math.sqrt(model.position.x ** 2 + model.position.z ** 2);
-  if (distance > 35) {
-    let angle = Math.atan2(model.position.z, model.position.x);
-    model.position.x = 35 * Math.cos(angle);
-    model.position.z = 35 * Math.sin(angle);
-
-    // Change direction after hitting boundary
-    modelData.speedX *= -1;
-    modelData.speedZ *= -1;
+async function addArtworkToSpace(){
+  let artData = await getArt("horse", 10);
+  
+  // we should have access to the artData from the API
+  console.log(artData,length);
+  let count =0;
+  //
+  for (let i = 0; i < 3; i++){
+    for (let j = 0; j < 3; j++){
+    count +=1;
+      
+    let info = artData[count];
+     
+    let url = info.imageUrl;
+    let title = info.title;
+    
+    console.log(url);
+    console.log(title);
+      
+    // create our image texture
+    let myImageTex = new THREE.TextureLoader().load(url);
+    let myMat = new THREE.MeshBasicMaterial({map: myImageTex});
+    let geo = new THREE.BoxGeometry(1,1,1);
+    let mesh = new THREE.Mesh(geo,myMat);
+    mesh.position.set(i * 2, j*2, 3);
+    scene.add(mesh);
+    }
   }
 }
 
-let pulsateTime = 0; // Time variable to control the animation speed
+// keep track of which frame we are on
+let frameCount = 0;
 
 function animate() {
-  pulsateTime += 0.01; // Adjust speed of pulsation
-
-  // Animate octahedron scale
-  let scaleFactor = 1 + 0.3 * Math.sin(pulsateTime); // Scale varies between 0.7 and 1.3
-  octahedron.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-  angle += rotationSpeed;
-  camera.position.x = radius * Math.cos(angle);
-  camera.position.z = radius * Math.sin(angle);
-  camera.lookAt(0, 0, 0);
-
-  animateModel();
+  // angle += rotationSpeed;
+  // camera.position.x = radius * Math.cos(angle);
+  // camera.position.z = radius * Math.sin(angle);
+  // camera.lookAt(0, 0, 0);
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
