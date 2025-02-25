@@ -146,7 +146,7 @@ function init() {
     const lightHeight = 18; // Adjust light height
 
     const ceilingLight = new THREE.DirectionalLight(0xffffff, 1);
-    ceilingLight.position.set(midX, lightHeight, midZ);
+    ceilingLight.position.set(midX, 0, midZ);
     ceilingLight.target.position.set(midX, 20, midZ); // Point towards the center
     ceilingLight.castShadow = true;
 
