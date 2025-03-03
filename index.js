@@ -14,7 +14,6 @@ const textureLoader = new THREE.TextureLoader();
 const customTexture = textureLoader.load(
   "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/TCom_StrandedBambooPlate_1K_albedo.png?v=1740983774496"
 ); // Replace with your actual texture link
-
 // Define rainbow colors for Models
 const rainbowColors = [
   0xff0000, 0xff7f00, 0xffff00, 0x00ff00, 0x0000ff, 0x4b0082, 0x9400d3,
@@ -22,7 +21,7 @@ const rainbowColors = [
 
 function init() {
   scene = new THREE.Scene();
-
+  scene.background = new THREE.Color("#FDCBDF");
   // Set up the camera
   let aspect = window.innerWidth / window.innerHeight;
   camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
