@@ -3,27 +3,14 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 let scene, camera, renderer;
-let myModels = new Map();
+let myModels = new Map(); // Store models and their default materials
 let mouse = new THREE.Vector2();
 let raycaster = new THREE.Raycaster();
-let pickedObject = null; // Stores the object being moved
-let plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // Ground plane for positioning
-let intersection = new THREE.Vector3(); // Stores intersection point
 
-function init() {
-  scene = new THREE.Scene();
+// Load the texture for Model 1
+const textureLoader = new THREE.TextureLoader();
+const customTexture = textureLoader.load("https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/TCom_StrandedBambooPlate_1K_albedo.png?v=1740983774496"); // 🔄 Replace with your actual texture link
 
-  let aspect = window.innerWidth / window.innerHeight;
-  camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
-  camera.position.set(5, 5, 15);
-  camera.lookAt(0, 0, 0);
-
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
-
-  let controls = new OrbitControls(camera, renderer.domElement);
-  
 // Rainbow colors for models 2-8
 const rainbowColors = [
   "red",     // Model 2
@@ -34,14 +21,13 @@ const rainbowColors = [
   "indigo",  // Model 7
   "purple",  // Model 8
 ];
-}
 
 function init() {
   scene = new THREE.Scene();
 
   let aspect = window.innerWidth / window.innerHeight;
   camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
-  camera.position.set(5, 5, 15);
+  camera.position.set(300, 600, 300);
   camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -49,8 +35,7 @@ function init() {
   document.body.appendChild(renderer.domElement);
 
   let controls = new OrbitControls(camera, renderer.domElement);
-  // let gridHelper = new THREE.GridHelper(25, 25);
-  // scene.add(gridHelper);
+
 
   // Array of model URLs
   const modelLinks = [
@@ -64,58 +49,67 @@ function init() {
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_7.glb?v=1740980657856",
   ];
 
-   const loader = new GLTFLoader();
+  // Load each model from the list
+  const loader = new GLTFLoader();
   modelLinks.forEach((link, index) => {
     loader.load(link, (gltf) => {
       let model = gltf.scene;
-      model.position.set(index * 3, 0, 0);
+      model.position.set(0, 0, 0); // Spread models out along x-axis
       model.scale.set(1, 1, 1);
       scene.add(model);
 
-      myModels.set(model, model.position.clone()); // Store initial positions
+      let defaultMaterial;
+      if (index === 0) {
+        // Model 1 gets a texture
+        defaultMaterial = new THREE.MeshBasicMaterial({ map: customTexture });
+      } else {
+        // Models 2-8 get solid colors
+        defaultMaterial = new THREE.MeshBasicMaterial({ color: rainbowColors[index - 1] });
+      }
+
+      // Store the model with its default material
+      myModels.set(model, defaultMaterial);
 
       model.traverse((child) => {
         if (child.isMesh) {
-          child.material = new THREE.MeshBasicMaterial({ color: "white" });
+          child.material = defaultMaterial.clone();
         }
       });
     });
   });
 
-  document.addEventListener("mousemove", onMouseMove);
-  document.addEventListener("click", onMouseClick);
+  document.addEventListener("mousemove", (event) => {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  });
+
+  document.addEventListener("click", () => {
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+
+    if (intersects.length > 0) {
+      let clickedObject = intersects[0].object;
+
+      // Find the highest-level parent (the model itself)
+      while (clickedObject.parent && clickedObject.parent !== scene) {
+        clickedObject = clickedObject.parent;
+      }
+
+      if (myModels.has(clickedObject)) {
+        let defaultMaterial = myModels.get(clickedObject);
+
+        clickedObject.traverse((child) => {
+          if (child.isMesh) {
+            // Toggle between black and default material
+            let isBlack = child.material.color && child.material.color.getHexString() === "000000";
+            child.material = isBlack ? defaultMaterial.clone() : new THREE.MeshBasicMaterial({ color: "black" });
+          }
+        });
+      }
+    }
+  });
 
   loop();
-}
-
-function onMouseMove(event) {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-  if (pickedObject) {
-    raycaster.setFromCamera(mouse, camera);
-    raycaster.ray.intersectPlane(plane, intersection);
-    pickedObject.position.copy(intersection);
-  }
-}
-
-function onMouseClick() {
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(scene.children, true);
-
-  if (intersects.length > 0) {
-    let clickedObject = intersects[0].object;
-
-    while (clickedObject.parent && clickedObject.parent !== scene) {
-      clickedObject = clickedObject.parent;
-    }
-
-    if (!pickedObject) {
-      pickedObject = clickedObject;
-    } else {
-      pickedObject = null; // Drop the object
-    }
-  }
 }
 
 function loop() {
