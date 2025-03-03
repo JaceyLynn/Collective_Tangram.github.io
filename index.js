@@ -15,15 +15,9 @@ const customTexture = textureLoader.load(
   "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/TCom_StrandedBambooPlate_1K_albedo.png?v=1740983774496"
 ); // Replace with your actual texture link
 
-// Define rainbow colors for Models 
+// Define rainbow colors for Models
 const rainbowColors = [
-  0xff0000, 
-  0xff7f00, 
-  0xffff00, 
-  0x00ff00, 
-  0x0000ff, 
-  0x4b0082, 
-  0x9400d3, 
+  0xff0000, 0xff7f00, 0xffff00, 0x00ff00, 0x0000ff, 0x4b0082, 0x9400d3,
 ];
 
 function init() {
@@ -60,7 +54,7 @@ function init() {
   modelLinks.forEach((link, index) => {
     loader.load(link, (gltf) => {
       let model = gltf.scene;
-      model.position.set(0, 0, 0); 
+      model.position.set(0, 0, 0);
       model.scale.set(1, 1, 1);
       scene.add(model);
 
@@ -70,10 +64,14 @@ function init() {
         if (child.isMesh) {
           if (index === 0) {
             // Apply custom texture
-            child.material = new THREE.MeshBasicMaterial({ map: customTexture });
+            child.material = new THREE.MeshBasicMaterial({
+              map: customTexture,
+            });
           } else {
             // Apply rainbow colors
-            child.material = new THREE.MeshBasicMaterial({ color: rainbowColors[index - 1] });
+            child.material = new THREE.MeshBasicMaterial({
+              color: rainbowColors[index - 1],
+            });
           }
 
           if (!originalMaterial) originalMaterial = child.material.clone(); // Save original material
@@ -81,7 +79,10 @@ function init() {
       });
 
       // Store model data (original position & material)
-      myModels.set(model, { position: model.position.clone(), material: originalMaterial });
+      myModels.set(model, {
+        position: model.position.clone(),
+        material: originalMaterial,
+      });
     });
   });
 
@@ -102,7 +103,7 @@ function onMouseMove(event) {
 function onMouseClick() {
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(scene.children, true);
-//Checking for Intersections
+  //Checking for Intersections
   if (intersects.length > 0) {
     let clickedObject = intersects[0].object;
 
@@ -112,23 +113,32 @@ function onMouseClick() {
     }
     //Checking if the Object is in myModels
     if (myModels.has(clickedObject)) {
+      //Retrieving Stored Model Data
       let modelData = myModels.get(clickedObject);
       let defaultMaterial = modelData.material;
       let isRaised = clickedObject.position.y > modelData.position.y;
 
-      // Toggle object color 
+      // Toggle object color
       clickedObject.traverse((child) => {
         if (child.isMesh) {
           let currentColor = child.material.color.getHexString(); // Get color as a string
           let isPink = currentColor.toLowerCase() === "ff7fa3"; // Compare without "#"
 
           // Toggle between pink and default
-          child.material = isPink ? defaultMaterial : new THREE.MeshBasicMaterial({ color: 0xff7fa3 });
+          if (isPink) {
+            child.material = defaultMaterial;
+          } else {
+            child.material = new THREE.MeshBasicMaterial({ color: 0xff7fa3 });
+          }
         }
       });
 
       // Toggle Y position (raise or lower)
-      clickedObject.position.y = isRaised ? modelData.position.y : modelData.position.y + 100;
+      if (isRaised) {
+        clickedObject.position.y = modelData.position.y;
+      } else {
+        clickedObject.position.y = modelData.position.y + 100;
+      }
     }
   }
 }
