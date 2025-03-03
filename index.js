@@ -7,6 +7,10 @@ let myModels = new Map(); // Store models and their default colors
 let mouse = new THREE.Vector2();
 let raycaster = new THREE.Raycaster();
 
+// Load the texture for Model 1
+const textureLoader = new THREE.TextureLoader();
+const customTexture = textureLoader.load("TEXTURE_URL"); // 🔄 Replace with your actual texture link
+
 // Rainbow colors for models 2-8
 const rainbowColors = [
   "red",     // Model 2
@@ -31,8 +35,8 @@ function init() {
   document.body.appendChild(renderer.domElement);
 
   let controls = new OrbitControls(camera, renderer.domElement);
-  let gridHelper = new THREE.GridHelper(25, 25);
-  scene.add(gridHelper);
+  // let gridHelper = new THREE.GridHelper(25, 25);
+  // scene.add(gridHelper);
 
   // Array of model URLs
   const modelLinks = [
@@ -91,7 +95,7 @@ function init() {
           if (child.isMesh) {
             // Toggle between black and default color
             let currentColor = child.material.color.getHexString();
-            child.material.color.set(currentColor === "000000" ? defaultColor : "black");
+            child.material.color.set(currentColor === "000000" ? defaultColor : "white");
           }
         });
       }
