@@ -38,7 +38,7 @@ function init() {
 const geometry1 = new THREE.PlaneGeometry( 100, 100 );
 const material1 = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
 const plane = new THREE.Mesh( geometry1, material1 );
-  plane.rotateX(1.07);
+  geometry1.rotateX(1.07);
 scene.add( plane );
   // load model
   const modelLinks = [
