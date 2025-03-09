@@ -25,7 +25,7 @@ function init() {
   // Set up the camera
   let aspect = window.innerWidth / window.innerHeight;
   camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
-  camera.position.set(200, 600, 300); // Position the camera
+  camera.position.set(50, 500, 50); // Position the camera
   camera.lookAt(0, 0, 0); // Make the camera look at the origin
 
   // Set up the renderer
@@ -35,11 +35,15 @@ function init() {
 
   // Add orbit controls
   let controls = new OrbitControls(camera, renderer.domElement);
-const geometry1 = new THREE.PlaneGeometry( 100, 100 );
-const material1 = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
-const plane = new THREE.Mesh( geometry1, material1 );
-  geometry1.rotateX(1.07);
-scene.add( plane );
+  const geometry1 = new THREE.PlaneGeometry(4000, 4000);
+  const material1 = new THREE.MeshBasicMaterial({
+    color: '#404040',
+    side: THREE.DoubleSide,
+  });
+  const plane = new THREE.Mesh(geometry1, material1);
+  geometry1.rotateX(Math.PI/2);
+  plane.position.set(1000,0,1000);
+  scene.add(plane);
   // load model
   const modelLinks = [
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_0.glb?v=1740980628332", // Model 1 (Texture)
