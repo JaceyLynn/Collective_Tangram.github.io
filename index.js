@@ -16,12 +16,12 @@ const customTexture = textureLoader.load(
 ); // Replace with your actual texture link
 // Define rainbow colors for Models
 const rainbowColors = [
-  0xff0000, 0xff7f00, 0xffff00, 0x00ff00, 0x0000ff, 0x4b0082, 0x9400d3,
+  '#D4A29C', '#E8B298', '#FDE8B3', '#BDE1B3', '#B0E1E3', '#97ADF6', '#C6A0D4',
 ];
 
 function init() {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color("#FDCBDF");
+  scene.background = new THREE.Color('#404040');
   // Set up the camera
   let aspect = window.innerWidth / window.innerHeight;
   camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
@@ -33,6 +33,20 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 10);
+  directionalLight.position.set(400, 400, 400);
+  directionalLight.castShadow = true;
+  scene.add(directionalLight);
+
+  directionalLight.shadow.mapSize.width = 4000;
+  directionalLight.shadow.mapSize.height = 4000;
+  directionalLight.shadow.camera.near = 0.5;
+  directionalLight.shadow.camera.far = 200;
+  //defines the boundaries of the shadow camera’s frustum (viewing box of shadows).
+  directionalLight.shadow.camera.left = -1000;
+  directionalLight.shadow.camera.right = 1000;
+  directionalLight.shadow.camera.top = 1000;
+  directionalLight.shadow.camera.bottom = -1000;
   // Add orbit controls
   let controls = new OrbitControls(camera, renderer.domElement);
   const geometry1 = new THREE.PlaneGeometry(4000, 4000);
@@ -42,7 +56,8 @@ function init() {
   });
   const plane = new THREE.Mesh(geometry1, material1);
   geometry1.rotateX(Math.PI/2);
-  plane.position.set(1000,0,1000);
+  plane.position.set(1000,-10,1000);
+  plane.receiveShadow = true;
   scene.add(plane);
   // load model
   const modelLinks = [
@@ -63,6 +78,7 @@ function init() {
       let model = gltf.scene;
       model.position.set(0, 0, 0);
       model.scale.set(1, 1, 1);
+      model.castShadow = true;
       scene.add(model);
 
       let originalMaterial;
