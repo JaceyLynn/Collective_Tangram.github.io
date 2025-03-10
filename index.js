@@ -31,23 +31,27 @@ function init() {
   // Set up the renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
   
   document.body.appendChild(renderer.domElement);
 
   const directionalLight = new THREE.DirectionalLight(0xffffff, 10);
-  directionalLight.position.set(400, 400, 400);
+  directionalLight.position.set(100, 200, 100);
   directionalLight.castShadow = true;
   scene.add(directionalLight);
+  const helper = new THREE.DirectionalLightHelper( directionalLight, 10 );
+scene.add( helper );
 
   directionalLight.shadow.mapSize.width = 4000;
   directionalLight.shadow.mapSize.height = 4000;
   directionalLight.shadow.camera.near = 0.5;
   directionalLight.shadow.camera.far = 200;
   //defines the boundaries of the shadow camera’s frustum (viewing box of shadows).
-  directionalLight.shadow.camera.left = -1000;
-  directionalLight.shadow.camera.right = 1000;
-  directionalLight.shadow.camera.top = 1000;
-  directionalLight.shadow.camera.bottom = -1000;
+  directionalLight.shadow.camera.left = -2000;
+  directionalLight.shadow.camera.right = 2000;
+  directionalLight.shadow.camera.top = 2000;
+  directionalLight.shadow.camera.bottom = -2000;
   // Add orbit controls
   let controls = new OrbitControls(camera, renderer.domElement);
   const geometry1 = new THREE.PlaneGeometry(4000, 4000);
@@ -57,7 +61,7 @@ function init() {
   });
   const plane = new THREE.Mesh(geometry1, material1);
   geometry1.rotateX(Math.PI/2);
-  plane.position.set(1000,-10,1000);
+  plane.position.set(1000,-30,1000);
   plane.receiveShadow = true;
   scene.add(plane);
   // load model
