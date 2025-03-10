@@ -31,6 +31,7 @@ function init() {
   // Set up the renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
+  
   document.body.appendChild(renderer.domElement);
 
   const directionalLight = new THREE.DirectionalLight(0xffffff, 10);
