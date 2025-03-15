@@ -8,23 +8,44 @@ let mouse = new THREE.Vector2();
 let raycaster = new THREE.Raycaster();
 let pickedObject = null;
 let dragging = false;
+let isRotating = false;
+let trails = [];
+let clickX = 0;
+let clickY = 0;
+let clickZ = 0;
 
-// Load texture for Model 1
+// Load texture
 const textureLoader = new THREE.TextureLoader();
 const customTexture = textureLoader.load(
   "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/TCom_StrandedBambooPlate_1K_albedo.png?v=1740983774496"
 );
-
-const rainbowColors = ['#D4A29C', '#E8B298', '#FDE8B3', '#BDE1B3', '#B0E1E3', '#97ADF6', '#C6A0D4'];
+// puzzle colors
+const rainbowColors = [
+  "#D4A29C",
+  "#E8B298",
+  "#FDE8B3",
+  "#BDE1B3",
+  "#B0E1E3",
+  "#97ADF6",
+  "#C6A0D4",
+];
 
 function init() {
+  //canvas
   scene = new THREE.Scene();
-  scene.background = new THREE.Color('#404040');
-
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(50, 500, 50);
-  camera.lookAt(0,0,0);
-
+  scene.background = new THREE.Color("#404040");
+  //camera
+  camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    10000
+  );
+  camera.position.set(300, 300, 300);
+  camera.position.z += 30;
+  camera.position.x += -30;
+  camera.position.y += 20;
+  //renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
@@ -32,24 +53,30 @@ function init() {
 
   document.body.appendChild(renderer.domElement);
 
-  const light = new THREE.DirectionalLight(0xffffff, 5);
-  light.position.set(100, 200, 100);
+  // Set up the light with shadow
+  const light = new THREE.DirectionalLight(0xffffff, 4);
+  light.position.set(100, 300, 200);
   light.castShadow = true;
+  light.shadow.mapSize.width = 2048;
+  light.shadow.mapSize.height = 2048;
+  light.shadow.camera.near = 0.5;
+  light.shadow.camera.far = 5000;
   scene.add(light);
-
+  //floor plate
   const geometry1 = new THREE.PlaneGeometry(4000, 4000);
-  const material1 = new THREE.MeshBasicMaterial({
-    color: '#404040',
+  const material1 = new THREE.MeshStandardMaterial({
+    color: "#404040",
     side: THREE.DoubleSide,
   });
   const plane = new THREE.Mesh(geometry1, material1);
-  geometry1.rotateX(Math.PI/2);
-  plane.position.set(1000,-30,1000);
+  geometry1.rotateX(Math.PI / 2);
+  plane.position.set(0, 0, 1000);
   plane.receiveShadow = true;
   scene.add(plane);
 
-    // Add orbit controls
-  let controls = new OrbitControls(camera, renderer.domElement);
+  // Add orbit controls
+  // let controls = new OrbitControls(camera, renderer.domElement);
+
   // Load models
   const modelLinks = [
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_0.glb?v=1740980628332", // Model 1 (Texture)
@@ -61,51 +88,60 @@ function init() {
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_6.glb?v=1740980654436", // Model 7 (Indigo)
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_7.glb?v=1740980657856", // Model 8 (Purple)
   ];
-
+  //setup model
   const loader = new GLTFLoader();
   modelLinks.forEach((link, index) => {
     loader.load(link, (gltf) => {
       let model = gltf.scene;
-      model.castShadow = true;
       model.traverse((child) => {
         if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
           if (index === 0) {
-            child.material = new THREE.MeshStandardMaterial({ map: customTexture });
+            //box don't interact with click
+            child.material = new THREE.MeshStandardMaterial({
+              map: customTexture,
+            });
           } else {
-            child.material = new THREE.MeshStandardMaterial({ color: rainbowColors[index - 1] });
+            child.material = new THREE.MeshStandardMaterial({
+              color: rainbowColors[index - 1],
+            });
           }
         }
       });
 
       scene.add(model);
-      myModels.set(model, index === 0 ? 'static' : 'draggable');
+      myModels.set(model, index === 0 ? "static" : "draggable");
     });
   });
-
-  document.addEventListener('mousedown', onMouseDown);
-  document.addEventListener('mousemove', onMouseMove);
-  document.addEventListener('mouseup', onMouseUp);
+  //setup mouse interaction
+  document.addEventListener("mousedown", onMouseDown);
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
 
   animate();
 }
-
+//initiate drag and rotate
 function onMouseDown(event) {
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(scene.children, true);
-
+  clickX = intersects[0].point.x;
+  clickY = intersects[0].point.y;
+  clickZ = intersects[0].point.z;
+  camera.lookAt(clickX, clickY, clickZ);
   if (intersects.length > 0) {
     let clickedObject = intersects[0].object;
     while (clickedObject.parent && clickedObject.parent !== scene) {
       clickedObject = clickedObject.parent;
     }
-
-    if (myModels.get(clickedObject) === 'draggable') {
+    if (myModels.get(clickedObject) === "draggable") {
       pickedObject = clickedObject;
       dragging = true;
+      isRotating = true;
     }
   }
 }
-
+//move with mouse
 function onMouseMove(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -116,19 +152,75 @@ function onMouseMove(event) {
 
     if (intersects.length > 0) {
       const point = intersects[0].point;
-      pickedObject.position.set(point.x, 0, point.z);
+      pickedObject.position.set(point.x, point.y, point.z);
+      createTrail(point, pickedObject);
     }
   }
 }
-
+//stop moving when mouse release
 function onMouseUp() {
   dragging = false;
   pickedObject = null;
+  fadeOutTrail();
+}
+//add cute trail of triangles
+function createTrail(position, object) {
+  const geometry = new THREE.CircleGeometry(Math.random() * 20 + 5, 3);
+  const material = new THREE.MeshBasicMaterial({
+    color: getObjectColor(object),
+    transparent: true,
+    opacity: 0.5,
+    side: THREE.DoubleSide,
+  });
+  const trail = new THREE.Mesh(geometry, material);
+  trail.position.set(position.x, 2, position.z);
+  trail.rotation.x = -Math.PI / 2;
+  trail.rotation.z = Math.random() * Math.PI * 2;
+
+  scene.add(trail);
+  trails.push(trail);
+}
+//make the trail color change according to piece color
+function getObjectColor(object) {
+  let color = new THREE.Color(0xffffff);
+  object.traverse(function (child) {
+    if (child.isMesh) {
+      color = child.material.color;
+    }
+  });
+  return color;
+}
+//trail fades when mouse release
+function fadeOutTrail() {
+  trails.forEach(function (trail, index) {
+    let interval = setInterval(function () {
+      trail.material.opacity -= 0.02;
+      if (trail.material.opacity <= 0) {
+        scene.remove(trail);
+        clearInterval(interval);
+      }
+    }, 50);
+  });
+  trails = [];
 }
 
 function animate() {
+if (camera.position.y>50){
+  camera.position.x-=0.5;
+  camera.position.y-=0.5;
+  camera.position.z-=0.5;
+}
+
+
+  camera.near = 20;
+  
+  if (isRotating && pickedObject) {
+    //rotate animation
+    pickedObject.rotation.y += 0.01;
+  }
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
 
 init();
+
