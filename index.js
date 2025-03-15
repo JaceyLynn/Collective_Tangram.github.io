@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { EditableCameraPathTool } from "./EditableCameraPathTool.js";
 
 let scene, camera, renderer;
 let myModels = new Map();
@@ -205,15 +206,14 @@ function fadeOutTrail() {
 }
 
 function animate() {
-if (camera.position.y>50){
-  camera.position.x-=0.5;
-  camera.position.y-=0.5;
-  camera.position.z-=0.5;
-}
-
+  if (dragging && camera.position.y > 150) {
+    camera.position.x -= 0.5;
+    camera.position.y -= 0.5;
+    camera.position.z -= 0.5;
+  }
 
   camera.near = 20;
-  
+
   if (isRotating && pickedObject) {
     //rotate animation
     pickedObject.rotation.y += 0.01;
@@ -223,4 +223,3 @@ if (camera.position.y>50){
 }
 
 init();
-
