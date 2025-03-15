@@ -76,7 +76,7 @@ function init() {
   scene.add(plane);
 
   // Add orbit controls
-  // let controls = new OrbitControls(camera, renderer.domElement);
+  let controls = new OrbitControls(camera, renderer.domElement);
 
   // Load models
   const modelLinks = [
