@@ -56,12 +56,10 @@ function init() {
 
   document.body.appendChild(renderer.domElement);
 
-      let cameraPathPoints = [new THREE.Vector3(-0.005649065304115575, 25.82775421985352, -7.387250055318111),
-new THREE.Vector3(1000, 2500.455618537384062, -1000),
-new THREE.Vector3(1900.347919762284775, 1800.385666013805515, 400.1302347403590165),
-new THREE.Vector3(0.00010119455435919633, 400.5226784194614575, 3800.767302606272374),
-new THREE.Vector3(-330.06699788614867, 300.8535892041909463, 1400.413077948970269),
-new THREE.Vector3(-10.314962968942238, 3200.613089982691804, 400.003479234076309),
+let cameraPathPoints = [new THREE.Vector3(0, 400,200),
+new THREE.Vector3(200, 800, 200),
+new THREE.Vector3(400, 600,200),
+new THREE.Vector3(200, 400,200),
 ]; 
   
   let cameraTargetPosition = new THREE.Vector3(-1.334887755641518, 23.787482740077042, -0.18381425004689622);
@@ -88,7 +86,7 @@ new THREE.Vector3(-10.314962968942238, 3200.613089982691804, 400.003479234076309
   scene.add(plane);
 
   // Add orbit controls
-  let controls = new OrbitControls(camera, renderer.domElement);
+  // let controls = new OrbitControls(camera, renderer.domElement);
 
   // Load models
   const modelLinks = [
@@ -141,7 +139,7 @@ function onMouseDown(event) {
   clickX = intersects[0].point.x;
   clickY = intersects[0].point.y;
   clickZ = intersects[0].point.z;
-  camera.lookAt(clickX, clickY, clickZ);
+  // camera.lookAt(clickX, clickY, clickZ);
   if (intersects.length > 0) {
     let clickedObject = intersects[0].object;
     while (clickedObject.parent && clickedObject.parent !== scene) {
