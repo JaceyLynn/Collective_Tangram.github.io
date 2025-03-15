@@ -56,10 +56,10 @@ function init() {
 
   document.body.appendChild(renderer.domElement);
 
-let cameraPathPoints = [new THREE.Vector3(0, 400,200),
-new THREE.Vector3(200, 800, 200),
-new THREE.Vector3(400, 600,200),
-new THREE.Vector3(200, 400,200),
+let cameraPathPoints = [new THREE.Vector3(200, 300,0),
+new THREE.Vector3(0, 400, 200),
+new THREE.Vector3(100, 500,500),
+new THREE.Vector3(0, 300,100),
 ]; 
   
   let cameraTargetPosition = new THREE.Vector3(-1.334887755641518, 23.787482740077042, -0.18381425004689622);
@@ -101,6 +101,7 @@ new THREE.Vector3(200, 400,200),
   ];
   //setup model
   const loader = new GLTFLoader();
+  
   modelLinks.forEach((link, index) => {
     loader.load(link, (gltf) => {
       let model = gltf.scene;
@@ -216,7 +217,7 @@ function fadeOutTrail() {
 }
 
 function animate() {
-  if (dragging && camera.position.y > 150) {
+  if (dragging && camera.position.y > 200) {
     camera.position.x -= 0.5;
     camera.position.y -= 0.5;
     camera.position.z -= 0.5;
