@@ -42,10 +42,8 @@ function init() {
     0.1,
     10000
   );
-  camera.position.set(300, 300, 300);
-  camera.position.z += 30;
-  camera.position.x += -30;
-  camera.position.y += 20;
+  camera.position.set(0, 500, 100);
+  camera.lookAt(0, 0, 0);
 
   //renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -140,6 +138,10 @@ function onMouseDown(event) {
   console.log("Mouse down detected!");
   console.log("Intersections:", intersects.length, intersects);
 
+  clickX = intersects[0].point.x;
+  clickY = intersects[0].point.y;
+  clickZ = intersects[0].point.z;
+  camera.lookAt(clickX, clickY, clickZ);
   if (intersects.length > 0) {
     let clickedObject = intersects[0].object;
 
@@ -266,7 +268,7 @@ function fadeOutTrail() {
 function animate() {
   if (dragging) {
     console.log("Dragging is active! Object should be moving.");
-    if (camera.position.y > 200) {
+    if (camera.position.y > 250) {
       camera.position.x -= 0.5;
       camera.position.y -= 0.5;
       camera.position.z -= 0.5;

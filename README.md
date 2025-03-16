@@ -1,5 +1,7 @@
-## Real Time Social Spaces
+## TANGRAM
 
-This sketch shows the basics of using three.js with glitch.com web-based editor.
+Click and Drag to move
 
-To create your own copy, click 'Remix' at the top of the page.
+Click and Shift to rotate
+
+Click anywhere to adjust camera direction
