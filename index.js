@@ -46,8 +46,7 @@ function init() {
   camera.position.z += 30;
   camera.position.x += -30;
   camera.position.y += 20;
-  
-  
+
   //renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -56,14 +55,14 @@ function init() {
 
   document.body.appendChild(renderer.domElement);
 
-// let cameraPathPoints = [new THREE.Vector3(200, 300,0),
-// new THREE.Vector3(0, 400, 200),
-// new THREE.Vector3(100, 500,500),
-// new THREE.Vector3(0, 300,100),
-// ]; 
-  
-//   let cameraTargetPosition = new THREE.Vector3(-1.334887755641518, 23.787482740077042, -0.18381425004689622);
-//   new EditableCameraPathTool(camera, scene, renderer, cameraPathPoints, cameraTargetPosition);
+  // let cameraPathPoints = [new THREE.Vector3(200, 300,0),
+  // new THREE.Vector3(0, 400, 200),
+  // new THREE.Vector3(100, 500,500),
+  // new THREE.Vector3(0, 300,100),
+  // ];
+
+  //   let cameraTargetPosition = new THREE.Vector3(-1.334887755641518, 23.787482740077042, -0.18381425004689622);
+  //   new EditableCameraPathTool(camera, scene, renderer, cameraPathPoints, cameraTargetPosition);
   // Set up the light with shadow
   const light = new THREE.DirectionalLight(0xffffff, 4);
   light.position.set(100, 300, 200);
@@ -101,7 +100,7 @@ function init() {
   ];
   //setup model
   const loader = new GLTFLoader();
-  
+
   modelLinks.forEach((link, index) => {
     loader.load(link, (gltf) => {
       let model = gltf.scene;
@@ -145,7 +144,10 @@ function onMouseDown(event) {
     let clickedObject = intersects[0].object;
 
     // Ignore TransformControls if clicked
-    if (clickedObject.type === "Object3D" && clickedObject.parent?.type === "TransformControls") {
+    if (
+      clickedObject.type === "Object3D" &&
+      clickedObject.parent?.type === "TransformControls"
+    ) {
       console.log("Clicked on TransformControls, ignoring...");
       return;
     }
@@ -185,10 +187,6 @@ function onMouseDown(event) {
   }
 }
 
-
-
-
-
 //move with mouse
 function onMouseMove(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -196,7 +194,7 @@ function onMouseMove(event) {
 
   if (dragging && pickedObject && !isRotating) {
     console.log("Mouse moving while dragging...");
-    
+
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObject(scene.children[1], true); // Floor
 
@@ -216,9 +214,6 @@ function onMouseMove(event) {
   }
 }
 
-
-
-
 //stop moving when mouse release
 function onMouseUp() {
   console.log("Mouse up, stopping dragging.");
@@ -226,7 +221,6 @@ function onMouseUp() {
   pickedObject = null;
   fadeOutTrail();
 }
-
 
 //add cute trail of triangles
 function createTrail(position, object) {
@@ -272,8 +266,15 @@ function fadeOutTrail() {
 function animate() {
   if (dragging) {
     console.log("Dragging is active! Object should be moving.");
+    if (camera.position.y > 200) {
+      camera.position.x -= 0.5;
+      camera.position.y -= 0.5;
+      camera.position.z -= 0.5;
+    }
+
+    camera.near = 20;
   }
-  
+
   if (isRotating && pickedObject) {
     let center = pickedObject.userData.rotationCenter;
 
@@ -288,7 +289,7 @@ function animate() {
 
       pickedObject.position.copy(tempPosition);
       pickedObject.rotateOnAxis(axis, angle);
-      
+
       console.log("Rotating around:", center);
     }
   }
@@ -296,8 +297,5 @@ function animate() {
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
-
-
-
 
 init();
