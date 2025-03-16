@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { EditableCameraPathTool } from "./EditableCameraPathTool.js";
+// import { EditableCameraPathTool } from "./EditableCameraPathTool.js";
 
 let scene, camera, renderer;
 let myModels = new Map();
@@ -56,14 +56,14 @@ function init() {
 
   document.body.appendChild(renderer.domElement);
 
-let cameraPathPoints = [new THREE.Vector3(200, 300,0),
-new THREE.Vector3(0, 400, 200),
-new THREE.Vector3(100, 500,500),
-new THREE.Vector3(0, 300,100),
-]; 
+// let cameraPathPoints = [new THREE.Vector3(200, 300,0),
+// new THREE.Vector3(0, 400, 200),
+// new THREE.Vector3(100, 500,500),
+// new THREE.Vector3(0, 300,100),
+// ]; 
   
-  let cameraTargetPosition = new THREE.Vector3(-1.334887755641518, 23.787482740077042, -0.18381425004689622);
-  new EditableCameraPathTool(camera, scene, renderer, cameraPathPoints, cameraTargetPosition);
+//   let cameraTargetPosition = new THREE.Vector3(-1.334887755641518, 23.787482740077042, -0.18381425004689622);
+//   new EditableCameraPathTool(camera, scene, renderer, cameraPathPoints, cameraTargetPosition);
   // Set up the light with shadow
   const light = new THREE.DirectionalLight(0xffffff, 4);
   light.position.set(100, 300, 200);
@@ -138,16 +138,31 @@ function onMouseDown(event) {
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(scene.children, true);
 
+  console.log("Mouse down detected!");
+  console.log("Intersections:", intersects.length, intersects);
+
   if (intersects.length > 0) {
     let clickedObject = intersects[0].object;
+
+    // Ignore TransformControls if clicked
+    if (clickedObject.type === "Object3D" && clickedObject.parent?.type === "TransformControls") {
+      console.log("Clicked on TransformControls, ignoring...");
+      return;
+    }
+
+    // Traverse up to the parent if necessary
     while (clickedObject.parent && clickedObject.parent !== scene) {
       clickedObject = clickedObject.parent;
     }
 
+    console.log("Clicked Object:", clickedObject.name || clickedObject);
+
     if (myModels.get(clickedObject) === "draggable") {
       pickedObject = clickedObject;
       let clickedPoint = intersects[0].point.clone();
-      
+
+      console.log("Picked Object:", pickedObject.name || pickedObject);
+
       // Store rotation center
       pickedObject.userData.rotationCenter = clickedPoint.clone();
 
@@ -159,9 +174,18 @@ function onMouseDown(event) {
 
       dragging = true;
       isRotating = event.shiftKey; // Hold shift to rotate
+
+      console.log("Dragging started:", dragging);
+      console.log("Rotation Mode:", isRotating);
+    } else {
+      console.log("Object is not draggable.");
     }
+  } else {
+    console.log("No object clicked.");
   }
 }
+
+
 
 
 
@@ -171,19 +195,22 @@ function onMouseMove(event) {
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
   if (dragging && pickedObject && !isRotating) {
+    console.log("Mouse moving while dragging...");
+    
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObject(scene.children[1], true); // Check against the floor
+    const intersects = raycaster.intersectObject(scene.children[1], true); // Floor
 
     if (intersects.length > 0) {
       const point = intersects[0].point;
-      
-      // Adjust dragging to keep the offset relative to the click position
+      console.log("Intersected with ground at:", point);
+
       pickedObject.position.set(
         point.x + pickedObject.userData.offset.x,
-        pickedObject.position.y, // Keep the original Y height
+        pickedObject.position.y, // Keep Y height constant
         point.z + pickedObject.userData.offset.z
       );
 
+      console.log("Updated position:", pickedObject.position);
       createTrail(pickedObject.position, pickedObject);
     }
   }
@@ -191,13 +218,15 @@ function onMouseMove(event) {
 
 
 
+
 //stop moving when mouse release
 function onMouseUp() {
+  console.log("Mouse up, stopping dragging.");
   dragging = false;
-  isRotating = false;
   pickedObject = null;
   fadeOutTrail();
 }
+
 
 //add cute trail of triangles
 function createTrail(position, object) {
@@ -241,12 +270,16 @@ function fadeOutTrail() {
 }
 
 function animate() {
+  if (dragging) {
+    console.log("Dragging is active! Object should be moving.");
+  }
+  
   if (isRotating && pickedObject) {
     let center = pickedObject.userData.rotationCenter;
 
     if (center) {
-      let axis = new THREE.Vector3(0, 1, 0); // Rotate around Y-axis
-      let angle = 0.02; // Rotation speed
+      let axis = new THREE.Vector3(0, 1, 0);
+      let angle = 0.02;
 
       let tempPosition = new THREE.Vector3().copy(pickedObject.position);
       tempPosition.sub(center);
@@ -255,6 +288,8 @@ function animate() {
 
       pickedObject.position.copy(tempPosition);
       pickedObject.rotateOnAxis(axis, angle);
+      
+      console.log("Rotating around:", center);
     }
   }
 
