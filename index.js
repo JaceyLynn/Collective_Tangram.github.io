@@ -137,44 +137,68 @@ new THREE.Vector3(0, 300,100),
 function onMouseDown(event) {
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(scene.children, true);
-  clickX = intersects[0].point.x;
-  clickY = intersects[0].point.y;
-  clickZ = intersects[0].point.z;
-  // camera.lookAt(clickX, clickY, clickZ);
+
   if (intersects.length > 0) {
     let clickedObject = intersects[0].object;
     while (clickedObject.parent && clickedObject.parent !== scene) {
       clickedObject = clickedObject.parent;
     }
+
     if (myModels.get(clickedObject) === "draggable") {
       pickedObject = clickedObject;
+      let clickedPoint = intersects[0].point.clone();
+      
+      // Store rotation center
+      pickedObject.userData.rotationCenter = clickedPoint.clone();
+
+      // Store offset for dragging
+      pickedObject.userData.offset = new THREE.Vector3().subVectors(
+        pickedObject.position,
+        clickedPoint
+      );
+
       dragging = true;
-      isRotating = true;
+      isRotating = event.shiftKey; // Hold shift to rotate
     }
   }
 }
+
+
+
 //move with mouse
 function onMouseMove(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-  if (dragging && pickedObject) {
+  if (dragging && pickedObject && !isRotating) {
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObject(scene.children[1], true);
+    const intersects = raycaster.intersectObject(scene.children[1], true); // Check against the floor
 
     if (intersects.length > 0) {
       const point = intersects[0].point;
-      pickedObject.position.set(point.x, point.y, point.z);
-      createTrail(point, pickedObject);
+      
+      // Adjust dragging to keep the offset relative to the click position
+      pickedObject.position.set(
+        point.x + pickedObject.userData.offset.x,
+        pickedObject.position.y, // Keep the original Y height
+        point.z + pickedObject.userData.offset.z
+      );
+
+      createTrail(pickedObject.position, pickedObject);
     }
   }
 }
+
+
+
 //stop moving when mouse release
 function onMouseUp() {
   dragging = false;
+  isRotating = false;
   pickedObject = null;
   fadeOutTrail();
 }
+
 //add cute trail of triangles
 function createTrail(position, object) {
   const geometry = new THREE.CircleGeometry(Math.random() * 20 + 5, 3);
@@ -217,20 +241,28 @@ function fadeOutTrail() {
 }
 
 function animate() {
-  if (dragging && camera.position.y > 200) {
-    camera.position.x -= 0.5;
-    camera.position.y -= 0.5;
-    camera.position.z -= 0.5;
-  }
-
-  camera.near = 20;
-
   if (isRotating && pickedObject) {
-    //rotate animation
-    pickedObject.rotation.y += 0.01;
+    let center = pickedObject.userData.rotationCenter;
+
+    if (center) {
+      let axis = new THREE.Vector3(0, 1, 0); // Rotate around Y-axis
+      let angle = 0.02; // Rotation speed
+
+      let tempPosition = new THREE.Vector3().copy(pickedObject.position);
+      tempPosition.sub(center);
+      tempPosition.applyAxisAngle(axis, angle);
+      tempPosition.add(center);
+
+      pickedObject.position.copy(tempPosition);
+      pickedObject.rotateOnAxis(axis, angle);
+    }
   }
+
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
+
+
+
 
 init();
