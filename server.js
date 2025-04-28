@@ -1,9 +1,13 @@
 const express = require('express');
 const http = require('http');
+const socketIo = require('socket.io');
 
-const io = require('socket.io');
+// Create an express app and HTTP server
 const app = express();
 const server = http.createServer(app);
+
+// Initialize Socket.io with the HTTP server
+const io = socketIo(server);
 
 // Store the state of pieces and player instantiation counts
 let pieces = [];
@@ -22,6 +26,7 @@ io.on('connection', (socket) => {
 
   // Send the current state of pieces to the new player
   socket.emit('initialize', pieces);
+
   // Handle a player instantiating a new piece
   socket.on('instantiatePiece', (pieceData) => {
     if (playerInstantiations[socket.id] < 7) {
@@ -55,13 +60,14 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle player disconnect
   socket.on('disconnect', () => {
     console.log('A user disconnected:', socket.id);
     delete playerInstantiations[socket.id];  // Remove the player from instantiation tracking
   });
 });
 
-// Start the server on the specified port
+// Start the server on the specified port (Glitch dynamic port handling)
 const port = process.env.PORT || 3000;
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);

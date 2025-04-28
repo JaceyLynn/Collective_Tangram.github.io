@@ -316,15 +316,21 @@ let rotationInProgress = false; // Prevent continuous rotation while shift is he
 
 // Listen for shift key presses
 document.addEventListener('keydown', onKeyDown);
-
+// 1) Hook Space key to instantiate
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && !dragging) {
+    e.preventDefault();        // stop page scroll
+    instantiateNewPiece();
+  }
+});
 function onKeyDown(event) {
   if (event.key === 'Shift' && pickedObject) {
     // Only rotate if the Shift key is pressed and an object is selected
     rotateObjectBy45Degrees();
   }
-  if (event.key === ' ' && !dragging) {  // Space bar press and not dragging
-    instantiateNewPiece();
-  }
+  // if (event.key === ' ' && !dragging) {  // Space bar press and not dragging
+  //   instantiateNewPiece();
+  // }
 }
 
 function updateScene() {
