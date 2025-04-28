@@ -1,10 +1,10 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js"
-
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+let socket;
 // Generate a unique ID for each new piece
 function generateUniqueId() {
-  return 'piece-' + Math.random().toString(36).substr(2, 9);
+  return "piece-" + Math.random().toString(36).substr(2, 9);
 }
 
 // Track pieces locally
@@ -81,7 +81,7 @@ function init() {
   plane.position.set(0, 0, 1000);
   plane.receiveShadow = true;
   scene.add(plane);
-  plane.name = 'floor';
+  plane.name = "floor";
 
   // Add orbit controls
   let controls = new OrbitControls(camera, renderer.domElement);
@@ -120,47 +120,50 @@ function init() {
   document.addEventListener("mousedown", onMouseDown);
   document.addEventListener("mousemove", onMouseMove);
   document.addEventListener("mouseup", onMouseUp);
-const socket = io();
-  
-    // --- new multiplayer piece handlers ---
-  socket.on('initialize', (existingPieces) => {
+  socket = io({
+  transports: ["websocket"]  // <-- no polling, only ws
+});
+
+socket.on("connect", () => {
+  console.log("Connected over WebSocket, socket id:", socket.id);
+});
+
+  // --- new multiplayer piece handlers ---
+  socket.on("initialize", (existingPieces) => {
     pieces = existingPieces;
-    pieces.forEach(p => createOrUpdatePiece(p));
+    pieces.forEach((p) => createOrUpdatePiece(p));
   });
 
-  socket.on('newPiece', (newPiece) => {
-    if (!pieces.find(p => p.id === newPiece.id)) {
+  socket.on("newPiece", (newPiece) => {
+    if (!pieces.find((p) => p.id === newPiece.id)) {
       pieces.push(newPiece);
       createOrUpdatePiece(newPiece);
     }
   });
 
-  socket.on('pieceUpdated', (updated) => {
-    const idx = pieces.findIndex(p => p.id === updated.id);
+  socket.on("pieceUpdated", (updated) => {
+    const idx = pieces.findIndex((p) => p.id === updated.id);
     if (idx !== -1) {
       pieces[idx] = updated;
       createOrUpdatePiece(updated);
     }
   });
 
-  socket.on('limitReached', () => {
+  socket.on("limitReached", () => {
     alert("You've reached your 7-piece limit!");
   });
-  
-    document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && !dragging) {
+
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space" && !dragging) {
       e.preventDefault();
       instantiateNewPiece();
     }
-    if (e.key === 'Shift' && pickedObject) {
+    if (e.key === "Shift" && pickedObject) {
       rotateObjectBy45Degrees();
     }
   });
   animate();
-  
-  
 }
-
 
 // Function to create or update pieces in the scene
 function createOrUpdatePiece(piece) {
@@ -169,18 +172,26 @@ function createOrUpdatePiece(piece) {
 
   if (existingPiece) {
     // Update existing piece's position and rotation
-    existingPiece.position.set(piece.position.x, piece.position.y, piece.position.z);
-    existingPiece.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
+    existingPiece.position.set(
+      piece.position.x,
+      piece.position.y,
+      piece.position.z
+    );
+    existingPiece.rotation.set(
+      piece.rotation.x,
+      piece.rotation.y,
+      piece.rotation.z
+    );
   } else {
     // Create a new piece if it doesn't exist
     const loader = new GLTFLoader();
-    
+
     loader.load(modelLinks[piece.modelIndex], (gltf) => {
       let model = gltf.scene;
-      model.name = piece.id;  // Ensure the piece has a unique ID
+      model.name = piece.id; // Ensure the piece has a unique ID
       model.position.set(piece.position.x, piece.position.y, piece.position.z);
       model.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
-      
+
       // Apply color to the piece
       model.traverse((child) => {
         if (child.isMesh) {
@@ -198,7 +209,7 @@ function createOrUpdatePiece(piece) {
 
 // Emit piece updates (position or rotation) to the server
 function updatePiece(pieceData) {
-  socket.emit('updatePiece', pieceData); // Send updated piece data to the server
+  socket.emit("updatePiece", pieceData); // Send updated piece data to the server
 }
 
 //initiate drag and rotate
@@ -295,8 +306,6 @@ let rotationStep = 45; // 45 degrees per shift press
 let rotationAngle = 0; // Track current rotation angle
 let rotationInProgress = false; // Prevent continuous rotation while shift is held
 
-
-
 // // Listen for key presses
 // document.addEventListener('keydown', function(e) {
 //   // SPACE: instantiate a new piece
@@ -315,7 +324,7 @@ let rotationInProgress = false; // Prevent continuous rotation while shift is he
 function instantiateNewPiece() {
   // 1. Raycast to find the floor‐hit under the mouse
   raycaster.setFromCamera(mouse, camera);
-  const floor = scene.getObjectByName('floor');
+  const floor = scene.getObjectByName("floor");
   const hits = raycaster.intersectObject(floor, true);
   if (!hits.length) return;
   const hit = hits[0].point;
@@ -326,37 +335,51 @@ function instantiateNewPiece() {
     position: { x: hit.x, y: hit.y, z: hit.z },
     rotation: { x: 0, y: 0, z: 0 },
     color: rainbowColors[currentModelIndex],
-    modelIndex: currentModelIndex
+    modelIndex: currentModelIndex,
   };
 
   // 3. Send to server
-  socket.emit('instantiatePiece', pieceData);
+  socket.emit("instantiatePiece", pieceData);
 
   // 4. Advance your index locally too (server also cycles)
   currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
 }
 
-
-
 function updateScene() {
   // Loop through all pieces to add or update them in the scene
   pieces.forEach((piece) => {
     let existingPiece = scene.getObjectByName(piece.id); // Check if the piece already exists in the scene
-    
+
     if (existingPiece) {
       // Update the existing piece's position and rotation
-      existingPiece.position.set(piece.position.x, piece.position.y, piece.position.z);
-      existingPiece.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
+      existingPiece.position.set(
+        piece.position.x,
+        piece.position.y,
+        piece.position.z
+      );
+      existingPiece.rotation.set(
+        piece.rotation.x,
+        piece.rotation.y,
+        piece.rotation.z
+      );
     } else {
       // Create a new piece if it doesn't exist
       const loader = new GLTFLoader();
-      
+
       loader.load(modelLinks[currentModelIndex], (gltf) => {
         let model = gltf.scene;
         model.name = piece.id; // Assign the piece a unique name based on its ID
-        
-        model.position.set(piece.position.x, piece.position.y, piece.position.z);
-        model.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
+
+        model.position.set(
+          piece.position.x,
+          piece.position.y,
+          piece.position.z
+        );
+        model.rotation.set(
+          piece.rotation.x,
+          piece.rotation.y,
+          piece.rotation.z
+        );
 
         // Set the piece's color (could be based on piece.color)
         model.traverse((child) => {
@@ -385,14 +408,13 @@ function rotateObjectBy45Degrees() {
 
   // Apply the rotation around the object's center (local rotation)
   let angleInRadians = THREE.MathUtils.degToRad(rotationAngle); // Convert to radians
-  pickedObject.rotation.y = angleInRadians;  // Rotate around the Y-axis (horizontal)
+  pickedObject.rotation.y = angleInRadians; // Rotate around the Y-axis (horizontal)
 
   // Allow the rotation to complete before another key press
   setTimeout(() => {
     rotationInProgress = false;
   }, 200); // You can adjust this timeout duration as needed
 }
-
 
 //add cute trail of triangles
 function createTrail(position, object) {
