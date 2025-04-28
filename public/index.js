@@ -3,6 +3,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 let socket = io(); // Connect to the server
+let pieces = [];
 
 let scene, camera, renderer;
 let myModels = new Map();
@@ -118,8 +119,6 @@ function init() {
   animate();
 }
 
-// Track the state of pieces locally
-let pieces = [];
 let instantiatedPieces = 0; // Track how many pieces the player has instantiated
 
 // When the game initializes, get the current state of pieces from the server
@@ -128,10 +127,19 @@ socket.on('initialize', (existingPieces) => {
   updateScene(); // Update the scene to show existing pieces
 });
 
-// Listen for new pieces being instantiated by any player
+// Listen for a new piece to be instantiated from the server
 socket.on('newPiece', (newPiece) => {
+  console.log('New piece received:', newPiece);
+
+  // Check if the piece already exists by its ID
+  if (pieces.some(piece => piece.id === newPiece.id)) {
+    console.log('Piece already instantiated, skipping.');
+    return;
+  }
+
+  // Add the new piece to the pieces array
   pieces.push(newPiece);
-  updateScene(); // Update the scene to show the new piece
+  createOrUpdatePiece(newPiece);  // Function to add or update the piece in the scene
 });
 
 // Listen for updates to any piece (movement, rotation)
@@ -148,6 +156,39 @@ socket.on('limitReached', () => {
   alert("You have reached the limit of 7 pieces!");
 });
 
+
+function createOrUpdatePiece(piece) {
+  // Check if the piece already exists in the scene
+  let existingPiece = scene.getObjectByName(piece.id);
+
+  if (existingPiece) {
+    // If the piece exists, just update it
+    existingPiece.position.set(piece.position.x, piece.position.y, piece.position.z);
+    existingPiece.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
+  } else {
+    // If it's a new piece, create it
+    const loader = new GLTFLoader();
+    
+    loader.load(modelLinks[currentModelIndex], (gltf) => {
+      let model = gltf.scene;
+      model.name = piece.id;  // Use piece ID to ensure it's unique
+      model.position.set(piece.position.x, piece.position.y, piece.position.z);
+      model.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
+      
+      // Apply color
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.material = new THREE.MeshStandardMaterial({
+            color: piece.color || "#FFFFFF", // Ensure proper color application
+          });
+        }
+      });
+
+      // Add to scene
+      scene.add(model);
+    });
+  }
+}
 
 //initiate drag and rotate
 function onMouseDown(event) {
