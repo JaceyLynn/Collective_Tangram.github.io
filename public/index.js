@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js"
 
 // Generate a unique ID for each new piece
 function generateUniqueId() {
@@ -29,8 +28,6 @@ let modelLinks = [];
 // const customTexture = textureLoader.load(
 //   "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/TCom_StrandedBambooPlate_1K_albedo.png?v=1740983774496"
 // );
-
-const socket = io();
 
 // puzzle colors
 const rainbowColors = [
@@ -123,8 +120,45 @@ function init() {
   document.addEventListener("mousedown", onMouseDown);
   document.addEventListener("mousemove", onMouseMove);
   document.addEventListener("mouseup", onMouseUp);
+const socket = io();
+  
+    // --- new multiplayer piece handlers ---
+  socket.on('initialize', (existingPieces) => {
+    pieces = existingPieces;
+    pieces.forEach(p => createOrUpdatePiece(p));
+  });
 
+  socket.on('newPiece', (newPiece) => {
+    if (!pieces.find(p => p.id === newPiece.id)) {
+      pieces.push(newPiece);
+      createOrUpdatePiece(newPiece);
+    }
+  });
+
+  socket.on('pieceUpdated', (updated) => {
+    const idx = pieces.findIndex(p => p.id === updated.id);
+    if (idx !== -1) {
+      pieces[idx] = updated;
+      createOrUpdatePiece(updated);
+    }
+  });
+
+  socket.on('limitReached', () => {
+    alert("You've reached your 7-piece limit!");
+  });
+  
+    document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && !dragging) {
+      e.preventDefault();
+      instantiateNewPiece();
+    }
+    if (e.key === 'Shift' && pickedObject) {
+      rotateObjectBy45Degrees();
+    }
+  });
   animate();
+  
+  
 }
 
 
@@ -263,20 +297,20 @@ let rotationInProgress = false; // Prevent continuous rotation while shift is he
 
 
 
-// Listen for key presses
-document.addEventListener('keydown', function(e) {
-  // SPACE: instantiate a new piece
-  if (e.code === 'Space' && !dragging) {
-    e.preventDefault();        // stop the page from scrolling
-    instantiateNewPiece();
-    return;
-  }
+// // Listen for key presses
+// document.addEventListener('keydown', function(e) {
+//   // SPACE: instantiate a new piece
+//   if (e.code === 'Space' && !dragging) {
+//     e.preventDefault();        // stop the page from scrolling
+//     instantiateNewPiece();
+//     return;
+//   }
 
-  // SHIFT: rotate selected piece
-  if (e.key === 'Shift' && pickedObject) {
-    rotateObjectBy45Degrees();
-  }
-});
+//   // SHIFT: rotate selected piece
+//   if (e.key === 'Shift' && pickedObject) {
+//     rotateObjectBy45Degrees();
+//   }
+// });
 
 function instantiateNewPiece() {
   // 1. Raycast to find the floor‐hit under the mouse
