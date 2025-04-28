@@ -1,25 +1,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { io } from "socket.io-client";
 
-const socket = io({
-  transports: ["websocket"],    // ✔ only websocket, no polling
-  reconnectionAttempts: 5,      // optional: try 5 times
-  timeout: 2000,                // optional: 2s connection timeout
-});
 
-socket.on("connect", () => {
-  console.log("✅ Socket connected:", socket.id);
-});
-socket.on("connect_error", (err) => {
-  console.warn("❌ Socket connect_error:", err.message);
-});
-socket.on("disconnect", (reason) => {
-  console.log("⚠️ Socket disconnected:", reason);
-});
-
-let socket = io(); // Connect to the server
 // Generate a unique ID for each new piece
 function generateUniqueId() {
   return 'piece-' + Math.random().toString(36).substr(2, 9);
@@ -46,6 +29,8 @@ let modelLinks = [];
 // const customTexture = textureLoader.load(
 //   "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/TCom_StrandedBambooPlate_1K_albedo.png?v=1740983774496"
 // );
+
+const socket = io();
 
 // puzzle colors
 const rainbowColors = [
@@ -142,47 +127,6 @@ function init() {
   animate();
 }
 
-
-
-let instantiatedPieces = 0; // Track how many pieces the player has instantiated
-
-// When the game initializes, get the current state of pieces from the server
-socket.on('initialize', (existingPieces) => {
-  pieces = existingPieces;
-  updateScene(); // Update the scene to show existing pieces
-});
-
-// Listen for a new piece to be instantiated from the server
-socket.on('newPiece', (newPiece) => {
-  console.log('New piece received:', newPiece);
-
-  // Check if the piece already exists by ID
-  if (pieces.some(piece => piece.id === newPiece.id)) {
-    console.log('Piece already instantiated, skipping.');
-    return;
-  }
-
-  // Add the new piece to the pieces array
-  pieces.push(newPiece);
-  createOrUpdatePiece(newPiece);  // Add the piece to the scene
-});
-
-// Handle the case where a player has reached the instantiation limit
-socket.on('limitReached', () => {
-  alert("You have reached the limit of 7 pieces!");
-});
-
-
-// Listen for piece updates from other players
-socket.on('pieceUpdated', (updatedPieceData) => {
-  console.log('Piece updated:', updatedPieceData);
-  // Update the piece in the scene based on the received data
-  const index = pieces.findIndex(piece => piece.id === updatedPieceData.id);
-  if (index !== -1) {
-    pieces[index] = updatedPieceData;
-    createOrUpdatePiece(updatedPieceData);
-  }
-});
 
 // Function to create or update pieces in the scene
 function createOrUpdatePiece(piece) {
@@ -473,11 +417,6 @@ function animate() {
       tempPosition.sub(center);
       tempPosition.applyAxisAngle(axis, angle);
       tempPosition.add(center);
-
-      // pickedObject.position.copy(tempPosition);
-//       pickedObject.rotateOnAxis(axis, angle);
-
-//       console.log("Rotating around:", center);
     }
   }
 
