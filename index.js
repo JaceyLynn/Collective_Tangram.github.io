@@ -76,17 +76,17 @@ function init() {
   scene.add(plane);
 
   // Add orbit controls
-  // let controls = new OrbitControls(camera, renderer.domElement);
+  let controls = new OrbitControls(camera, renderer.domElement);
 
   // Load models
   modelLinks = [
-    "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_1.glb?v=1740980622181", // Model 2 (Red)
-    "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_2.glb?v=1740980636308", // Model 3 (Orange)
-    "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_3.glb?v=1740980639282", // Model 4 (Yellow)
-    "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_4.glb?v=1740980647077", // Model 5 (Green)
-    "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_5.glb?v=1740980651906", // Model 6 (Blue)
-    "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_6.glb?v=1740980654436", // Model 7 (Indigo)
-    "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_7.glb?v=1740980657856", // Model 8 (Purple)
+    "https://cdn.glitch.global/ed23d852-7331-4b29-ab56-64d0228ddb5a/tangram_1.glb?v=1745859379769", // Model 2 (Red)
+    "https://cdn.glitch.global/ed23d852-7331-4b29-ab56-64d0228ddb5a/tangram_2.glb?v=1745859411100", // Model 3 (Orange)
+    "https://cdn.glitch.global/ed23d852-7331-4b29-ab56-64d0228ddb5a/tangram_3.glb?v=1745859419982", // Model 4 (Yellow)
+    "https://cdn.glitch.global/ed23d852-7331-4b29-ab56-64d0228ddb5a/tangram_4.glb?v=1745859435730", // Model 5 (Green)
+    "https://cdn.glitch.global/ed23d852-7331-4b29-ab56-64d0228ddb5a/tangram_5.glb?v=1745859439934", // Model 6 (Blue)
+    "https://cdn.glitch.global/ed23d852-7331-4b29-ab56-64d0228ddb5a/tangram_6.glb?v=1745859442858", // Model 7 (Indigo)
+    "https://cdn.glitch.global/ed23d852-7331-4b29-ab56-64d0228ddb5a/tangram_7.glb?v=1745859776629", // Model 8 (Purple)
   ];
   //setup model
   const loader = new GLTFLoader();
