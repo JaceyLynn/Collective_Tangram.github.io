@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
+let socket = io(); // Connect to the server
+
 let scene, camera, renderer;
 let myModels = new Map();
 let mouse = new THREE.Vector2();
@@ -115,6 +117,38 @@ function init() {
 
   animate();
 }
+
+// Track the state of pieces locally
+let pieces = [];
+let instantiatedPieces = 0; // Track how many pieces the player has instantiated
+
+// When the game initializes, get the current state of pieces from the server
+socket.on('initialize', (existingPieces) => {
+  pieces = existingPieces;
+  updateScene(); // Update the scene to show existing pieces
+});
+
+// Listen for new pieces being instantiated by any player
+socket.on('newPiece', (newPiece) => {
+  pieces.push(newPiece);
+  updateScene(); // Update the scene to show the new piece
+});
+
+// Listen for updates to any piece (movement, rotation)
+socket.on('pieceUpdated', (updatedPieceData) => {
+  const index = pieces.findIndex(piece => piece.id === updatedPieceData.id);
+  if (index !== -1) {
+    pieces[index] = updatedPieceData;
+    updateScene(); // Update the scene with the updated piece
+  }
+});
+
+// Handle the case where a player has reached the instantiation limit
+socket.on('limitReached', () => {
+  alert("You have reached the limit of 7 pieces!");
+});
+
+
 //initiate drag and rotate
 function onMouseDown(event) {
   raycaster.setFromCamera(mouse, camera);
@@ -259,6 +293,19 @@ function instantiateNewPiece() {
       currentModelIndex = (currentModelIndex + 1) % modelLinks.length; // Cycle through models
     });
   }
+  const newPiece = {
+    id: generateUniqueId(),
+    position: { x: Math.random() * 400 - 200, y: 0, z: Math.random() * 400 - 200 },
+    rotation: { x: 0, y: 0, z: 0 },
+  };
+
+  // Send the new piece data to the server
+  socket.emit('instantiatePiece', newPiece);
+}
+
+// Utility function to generate unique IDs for each piece (you can improve this)
+function generateUniqueId() {
+  return 'piece-' + Math.random().toString(36).substr(2, 9);
 }
 
 
@@ -280,9 +327,6 @@ function rotateObjectBy45Degrees() {
     rotationInProgress = false;
   }, 200); // You can adjust this timeout duration as needed
 }
-
-
-// The rest of your existing code remains unchanged
 
 
 //add cute trail of triangles
