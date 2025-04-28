@@ -178,8 +178,8 @@ function createOrUpdatePiece(piece) {
   } else {
     // Create a new piece if it doesn't exist
     const loader = new GLTFLoader();
-
-    loader.load(modelLinks[currentModelIndex], (gltf) => {
+    
+    loader.load(modelLinks[piece.modelIndex], (gltf) => {
       let model = gltf.scene;
       model.name = piece.id;  // Ensure the piece has a unique ID
       model.position.set(piece.position.x, piece.position.y, piece.position.z);

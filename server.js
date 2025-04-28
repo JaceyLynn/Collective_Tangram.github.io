@@ -9,6 +9,7 @@ const io = socketIo(server);
 // Store the state of pieces and player instantiation counts
 let pieces = [];
 let playerInstantiations = {};  // Track pieces instantiated by each player
+let currentModelIndex = 0; // To cycle through models
 
 // Serve static files (e.g., HTML, CSS, JS)
 app.use(express.static('public'));
@@ -22,13 +23,18 @@ io.on('connection', (socket) => {
 
   // Send the current state of pieces to the new player
   socket.emit('initialize', pieces);
-
   // Handle a player instantiating a new piece
   socket.on('instantiatePiece', (pieceData) => {
     if (playerInstantiations[socket.id] < 7) {
+      // Assign the current model index to the piece
+      pieceData.modelIndex = currentModelIndex;
+
       // Player can instantiate a new piece
       pieces.push(pieceData);
       playerInstantiations[socket.id]++;
+
+      // Increment and cycle the model index
+      currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
 
       // Broadcast the new piece to all players
       io.emit('newPiece', pieceData);
