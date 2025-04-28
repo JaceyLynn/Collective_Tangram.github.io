@@ -52,15 +52,6 @@ function init() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   document.body.appendChild(renderer.domElement);
-
-  // let cameraPathPoints = [new THREE.Vector3(200, 300,0),
-  // new THREE.Vector3(0, 400, 200),
-  // new THREE.Vector3(100, 500,500),
-  // new THREE.Vector3(0, 300,100),
-  // ];
-
-  //   let cameraTargetPosition = new THREE.Vector3(-1.334887755641518, 23.787482740077042, -0.18381425004689622);
-  //   new EditableCameraPathTool(camera, scene, renderer, cameraPathPoints, cameraTargetPosition);
   // Set up the light with shadow
   const light = new THREE.DirectionalLight(0xffffff, 4);
   light.position.set(100, 300, 200);
@@ -87,7 +78,6 @@ function init() {
 
   // Load models
   const modelLinks = [
-    "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_0.glb?v=1740980628332", // Model 1 (Texture)
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_1.glb?v=1740980622181", // Model 2 (Red)
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_2.glb?v=1740980636308", // Model 3 (Orange)
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_3.glb?v=1740980639282", // Model 4 (Yellow)
@@ -106,16 +96,9 @@ function init() {
         if (child.isMesh) {
           child.castShadow = true;
           child.receiveShadow = true;
-          if (index === 0) {
-            //box don't interact with click
-            child.material = new THREE.MeshStandardMaterial({
-              map: customTexture,
-            });
-          } else {
-            child.material = new THREE.MeshStandardMaterial({
-              color: rainbowColors[index - 1],
-            });
-          }
+          child.material = new THREE.MeshStandardMaterial({
+            color: rainbowColors[index],
+          });
         }
       });
 
@@ -268,13 +251,13 @@ function fadeOutTrail() {
 function animate() {
   if (dragging) {
     console.log("Dragging is active! Object should be moving.");
-    if (camera.position.y > 250) {
-      camera.position.x -= 0.5;
-      camera.position.y -= 0.5;
-      camera.position.z -= 0.5;
-    }
+//     if (camera.position.y > 250) {
+//       camera.position.x -= 0.5;
+//       camera.position.y -= 0.5;
+//       camera.position.z -= 0.5;
+//     }
 
-    camera.near = 20;
+//     camera.near = 20;
   }
 
   if (isRotating && pickedObject) {
