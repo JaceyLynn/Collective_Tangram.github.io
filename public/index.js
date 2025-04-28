@@ -3,8 +3,13 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 let socket = io(); // Connect to the server
-let pieces = [];
+// Generate a unique ID for each new piece
+function generateUniqueId() {
+  return 'piece-' + Math.random().toString(36).substr(2, 9);
+}
 
+// Track pieces locally
+let pieces = [];
 let scene, camera, renderer;
 let myModels = new Map();
 let mouse = new THREE.Vector2();
@@ -119,6 +124,8 @@ function init() {
   animate();
 }
 
+
+
 let instantiatedPieces = 0; // Track how many pieces the player has instantiated
 
 // When the game initializes, get the current state of pieces from the server
@@ -131,7 +138,7 @@ socket.on('initialize', (existingPieces) => {
 socket.on('newPiece', (newPiece) => {
   console.log('New piece received:', newPiece);
 
-  // Check if the piece already exists by its ID
+  // Check if the piece already exists by ID
   if (pieces.some(piece => piece.id === newPiece.id)) {
     console.log('Piece already instantiated, skipping.');
     return;
@@ -139,16 +146,7 @@ socket.on('newPiece', (newPiece) => {
 
   // Add the new piece to the pieces array
   pieces.push(newPiece);
-  createOrUpdatePiece(newPiece);  // Function to add or update the piece in the scene
-});
-
-// Listen for updates to any piece (movement, rotation)
-socket.on('pieceUpdated', (updatedPieceData) => {
-  const index = pieces.findIndex(piece => piece.id === updatedPieceData.id);
-  if (index !== -1) {
-    pieces[index] = updatedPieceData;
-    updateScene(); // Update the scene with the updated piece
-  }
+  createOrUpdatePiece(newPiece);  // Add the piece to the scene
 });
 
 // Handle the case where a player has reached the instantiation limit
@@ -157,37 +155,67 @@ socket.on('limitReached', () => {
 });
 
 
+// Listen for piece updates from other players
+socket.on('pieceUpdated', (updatedPieceData) => {
+  console.log('Piece updated:', updatedPieceData);
+  // Update the piece in the scene based on the received data
+  const index = pieces.findIndex(piece => piece.id === updatedPieceData.id);
+  if (index !== -1) {
+    pieces[index] = updatedPieceData;
+    createOrUpdatePiece(updatedPieceData);
+  }
+});
+
+// Function to create or update pieces in the scene
 function createOrUpdatePiece(piece) {
-  // Check if the piece already exists in the scene
+  // Check if the piece already exists by ID
   let existingPiece = scene.getObjectByName(piece.id);
 
   if (existingPiece) {
-    // If the piece exists, just update it
+    // Update existing piece's position and rotation
     existingPiece.position.set(piece.position.x, piece.position.y, piece.position.z);
     existingPiece.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
   } else {
-    // If it's a new piece, create it
+    // Create a new piece if it doesn't exist
     const loader = new GLTFLoader();
-    
+
     loader.load(modelLinks[currentModelIndex], (gltf) => {
       let model = gltf.scene;
-      model.name = piece.id;  // Use piece ID to ensure it's unique
+      model.name = piece.id;  // Ensure the piece has a unique ID
       model.position.set(piece.position.x, piece.position.y, piece.position.z);
       model.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
       
-      // Apply color
+      // Apply color to the piece
       model.traverse((child) => {
         if (child.isMesh) {
           child.material = new THREE.MeshStandardMaterial({
-            color: piece.color || "#FFFFFF", // Ensure proper color application
+            color: piece.color || "#FFFFFF", // Default to white if no color is provided
           });
         }
       });
 
-      // Add to scene
+      // Add the new piece to the scene
       scene.add(model);
     });
   }
+}
+
+// Emit a new piece instantiation to the server
+function instantiateNewPiece() {
+  const newPiece = {
+    id: generateUniqueId(),
+    position: { x: Math.random() * 400 - 200, y: 0, z: Math.random() * 400 - 200 },
+    rotation: { x: 0, y: 0, z: 0 },
+    color: "#FF6347", // Assign color (optional)
+  };
+
+  // Send the new piece data to the server
+  socket.emit('instantiatePiece', newPiece);
+}
+
+// Emit piece updates (position or rotation) to the server
+function updatePiece(pieceData) {
+  socket.emit('updatePiece', pieceData); // Send updated piece data to the server
 }
 
 //initiate drag and rotate
@@ -297,56 +325,6 @@ function onKeyDown(event) {
   if (event.key === ' ' && !dragging) {  // Space bar press and not dragging
     instantiateNewPiece();
   }
-}
-
-// Function to instantiate a new piece at the mouse position
-function instantiateNewPiece() {
-  const loader = new GLTFLoader();
-  const modelLink = modelLinks[currentModelIndex]; // Get the model link from the list
-
-  // Raycast from the camera through the mouse position
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObject(scene.children[1], true); // Intersect the floor plane (scene.children[1] is the plane)
-
-  if (intersects.length > 0) {
-    const intersectionPoint = intersects[0].point; // Get the point where the mouse intersects the floor
-
-    loader.load(modelLink, (gltf) => {
-      let model = gltf.scene;
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-          child.material = new THREE.MeshStandardMaterial({
-            color: rainbowColors[currentModelIndex], // Assign colors in sequence
-          });
-        }
-      });
-
-      // Add the model to the scene at the intersection point
-      model.position.set(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
-      scene.add(model);
-
-      // Mark the model as draggable
-      myModels.set(model, "draggable");
-
-      // Track the index for the next piece
-      currentModelIndex = (currentModelIndex + 1) % modelLinks.length; // Cycle through models
-    });
-  }
-  const newPiece = {
-    id: generateUniqueId(),
-    position: { x: Math.random() * 400 - 200, y: 0, z: Math.random() * 400 - 200 },
-    rotation: { x: 0, y: 0, z: 0 },
-  };
-
-  // Send the new piece data to the server
-  socket.emit('instantiatePiece', newPiece);
-}
-
-// Utility function to generate unique IDs for each piece (you can improve this)
-function generateUniqueId() {
-  return 'piece-' + Math.random().toString(36).substr(2, 9);
 }
 
 function updateScene() {
