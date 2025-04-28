@@ -80,7 +80,7 @@ function init() {
 
   // Load models
   modelLinks = [
-    "https://cdn.glitch.global/ed23d852-7331-4b29-ab56-64d0228ddb5a/tangram_1.glb?v=1745859379769", // Model 2 (Red)
+    "https://cdn.glitch.global/ed23d852-7331-4b29-ab56-64d0228ddb5a/tangram_1.glb?v=1745860020025", // Model 2 (Red)
     "https://cdn.glitch.global/ed23d852-7331-4b29-ab56-64d0228ddb5a/tangram_2.glb?v=1745859411100", // Model 3 (Orange)
     "https://cdn.glitch.global/ed23d852-7331-4b29-ab56-64d0228ddb5a/tangram_3.glb?v=1745859419982", // Model 4 (Yellow)
     "https://cdn.glitch.global/ed23d852-7331-4b29-ab56-64d0228ddb5a/tangram_4.glb?v=1745859435730", // Model 5 (Green)
