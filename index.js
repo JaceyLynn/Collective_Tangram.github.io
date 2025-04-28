@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-// import { EditableCameraPathTool } from "./EditableCameraPathTool.js";
 
 let scene, camera, renderer;
 let myModels = new Map();
@@ -15,11 +14,12 @@ let clickX = 0;
 let clickY = 0;
 let clickZ = 0;
 
-// Load texture
-const textureLoader = new THREE.TextureLoader();
-const customTexture = textureLoader.load(
-  "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/TCom_StrandedBambooPlate_1K_albedo.png?v=1740983774496"
-);
+// // Load texture
+// const textureLoader = new THREE.TextureLoader();
+// const customTexture = textureLoader.load(
+//   "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/TCom_StrandedBambooPlate_1K_albedo.png?v=1740983774496"
+// );
+
 // puzzle colors
 const rainbowColors = [
   "#D4A29C",
@@ -103,7 +103,7 @@ function init() {
       });
 
       scene.add(model);
-      myModels.set(model, index === 0 ? "static" : "draggable");
+      myModels.set(model, index === -1 ? "static" : "draggable");
     });
   });
   //setup mouse interaction
@@ -121,10 +121,6 @@ function onMouseDown(event) {
   console.log("Mouse down detected!");
   console.log("Intersections:", intersects.length, intersects);
 
-  clickX = intersects[0].point.x;
-  clickY = intersects[0].point.y;
-  clickZ = intersects[0].point.z;
-  camera.lookAt(clickX, clickY, clickZ);
   if (intersects.length > 0) {
     let clickedObject = intersects[0].object;
 
@@ -251,13 +247,6 @@ function fadeOutTrail() {
 function animate() {
   if (dragging) {
     console.log("Dragging is active! Object should be moving.");
-//     if (camera.position.y > 250) {
-//       camera.position.x -= 0.5;
-//       camera.position.y -= 0.5;
-//       camera.position.z -= 0.5;
-//     }
-
-//     camera.near = 20;
   }
 
   if (isRotating && pickedObject) {
