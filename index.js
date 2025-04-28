@@ -203,6 +203,44 @@ function onMouseUp() {
   fadeOutTrail();
 }
 
+let rotationStep = 45; // 45 degrees per shift press
+let rotationAngle = 0; // Track current rotation angle
+let rotationInProgress = false; // Prevent continuous rotation while shift is held
+
+// Listen for shift key presses
+document.addEventListener('keydown', onKeyDown);
+
+function onKeyDown(event) {
+  if (event.key === 'Shift' && pickedObject) {
+    // Only rotate if the Shift key is pressed and an object is selected
+    rotateObjectBy45Degrees();
+  }
+}
+
+// Function to rotate the object by 45 degrees
+function rotateObjectBy45Degrees() {
+  if (!pickedObject || rotationInProgress) return; // Prevent rotation if already in progress
+
+  rotationInProgress = true;
+
+  // Increment the rotation angle by 45 degrees (convert to radians for Three.js)
+  rotationAngle += rotationStep;
+
+  // Apply the rotation around the Y-axis (you can change the axis if needed)
+  let axis = new THREE.Vector3(0, 1, 0); // Y-axis for horizontal rotation
+  let angleInRadians = THREE.MathUtils.degToRad(rotationAngle); // Convert to radians
+
+  pickedObject.rotation.set(0, angleInRadians, 0); // Apply the new rotation
+
+  // Allow the rotation to complete before another key press
+  setTimeout(() => {
+    rotationInProgress = false;
+  }, 200); // You can adjust this timeout duration as needed
+}
+
+// The rest of your existing code remains unchanged
+
+
 //add cute trail of triangles
 function createTrail(position, object) {
   const geometry = new THREE.CircleGeometry(Math.random() * 20 + 5, 3);
@@ -261,10 +299,10 @@ function animate() {
       tempPosition.applyAxisAngle(axis, angle);
       tempPosition.add(center);
 
-      pickedObject.position.copy(tempPosition);
-      pickedObject.rotateOnAxis(axis, angle);
+      // pickedObject.position.copy(tempPosition);
+//       pickedObject.rotateOnAxis(axis, angle);
 
-      console.log("Rotating around:", center);
+//       console.log("Rotating around:", center);
     }
   }
 
