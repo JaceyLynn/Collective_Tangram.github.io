@@ -200,7 +200,6 @@ function createOrUpdatePiece(piece) {
   }
 }
 
-
 // Emit a new piece instantiation to the server
 function instantiateNewPiece() {
   const newPiece = {
