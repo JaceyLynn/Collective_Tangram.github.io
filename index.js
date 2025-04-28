@@ -209,6 +209,8 @@ let rotationStep = 45; // 45 degrees per shift press
 let rotationAngle = 0; // Track current rotation angle
 let rotationInProgress = false; // Prevent continuous rotation while shift is held
 
+
+
 // Listen for shift key presses
 document.addEventListener('keydown', onKeyDown);
 
@@ -222,7 +224,7 @@ function onKeyDown(event) {
   }
 }
 
-// Instantiate a new piece from the model list in sequence at the mouse position
+// Function to instantiate a new piece at the mouse position
 function instantiateNewPiece() {
   const loader = new GLTFLoader();
   const modelLink = modelLinks[currentModelIndex]; // Get the model link from the list
@@ -258,7 +260,9 @@ function instantiateNewPiece() {
     });
   }
 }
-// Function to rotate the object by 45 degrees
+
+
+// Function to rotate the object by 45 degrees around its center
 function rotateObjectBy45Degrees() {
   if (!pickedObject || rotationInProgress) return; // Prevent rotation if already in progress
 
@@ -267,17 +271,16 @@ function rotateObjectBy45Degrees() {
   // Increment the rotation angle by 45 degrees (convert to radians for Three.js)
   rotationAngle += rotationStep;
 
-  // Apply the rotation around the Y-axis (you can change the axis if needed)
-  let axis = new THREE.Vector3(0, 1, 0); // Y-axis for horizontal rotation
+  // Apply the rotation around the object's center (local rotation)
   let angleInRadians = THREE.MathUtils.degToRad(rotationAngle); // Convert to radians
-
-  pickedObject.rotation.set(0, angleInRadians, 0); // Apply the new rotation
+  pickedObject.rotation.y = angleInRadians;  // Rotate around the Y-axis (horizontal)
 
   // Allow the rotation to complete before another key press
   setTimeout(() => {
     rotationInProgress = false;
   }, 200); // You can adjust this timeout duration as needed
 }
+
 
 // The rest of your existing code remains unchanged
 
