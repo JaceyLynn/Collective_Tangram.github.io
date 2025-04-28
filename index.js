@@ -13,6 +13,8 @@ let trails = [];
 let clickX = 0;
 let clickY = 0;
 let clickZ = 0;
+let currentModelIndex = 0; // Start with the first model
+let modelLinks = [];
 
 // // Load texture
 // const textureLoader = new THREE.TextureLoader();
@@ -77,7 +79,7 @@ function init() {
   // let controls = new OrbitControls(camera, renderer.domElement);
 
   // Load models
-  const modelLinks = [
+  modelLinks = [
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_1.glb?v=1740980622181", // Model 2 (Red)
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_2.glb?v=1740980636308", // Model 3 (Orange)
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_3.glb?v=1740980639282", // Model 4 (Yellow)
@@ -215,8 +217,47 @@ function onKeyDown(event) {
     // Only rotate if the Shift key is pressed and an object is selected
     rotateObjectBy45Degrees();
   }
+  if (event.key === ' ' && !dragging) {  // Space bar press and not dragging
+    instantiateNewPiece();
+  }
 }
 
+// Instantiate a new piece from the model list in sequence at the mouse position
+function instantiateNewPiece() {
+  const loader = new GLTFLoader();
+  const modelLink = modelLinks[currentModelIndex]; // Get the model link from the list
+
+  // Raycast from the camera through the mouse position
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObject(scene.children[1], true); // Intersect the floor plane (scene.children[1] is the plane)
+
+  if (intersects.length > 0) {
+    const intersectionPoint = intersects[0].point; // Get the point where the mouse intersects the floor
+
+    loader.load(modelLink, (gltf) => {
+      let model = gltf.scene;
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          child.material = new THREE.MeshStandardMaterial({
+            color: rainbowColors[currentModelIndex], // Assign colors in sequence
+          });
+        }
+      });
+
+      // Add the model to the scene at the intersection point
+      model.position.set(intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
+      scene.add(model);
+
+      // Mark the model as draggable
+      myModels.set(model, "draggable");
+
+      // Track the index for the next piece
+      currentModelIndex = (currentModelIndex + 1) % modelLinks.length; // Cycle through models
+    });
+  }
+}
 // Function to rotate the object by 45 degrees
 function rotateObjectBy45Degrees() {
   if (!pickedObject || rotationInProgress) return; // Prevent rotation if already in progress
