@@ -48,6 +48,15 @@ io.on('connection', (socket) => {
     }
   });
 
+  
+  socket.on('newPiece', (newPiece) => {
+  // Make sure you don’t double‐add:
+  if (pieces.find(p => p.id === newPiece.id)) return;
+
+  pieces.push(newPiece);
+  createOrUpdatePiece(newPiece);
+});
+  
   // Handle movement or rotation of pieces
   socket.on('updatePiece', (updatedPieceData) => {
     // Update the piece's state in the server

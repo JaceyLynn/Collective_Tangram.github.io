@@ -1,6 +1,23 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { io } from "socket.io-client";
+
+const socket = io({
+  transports: ["websocket"],    // ✔ only websocket, no polling
+  reconnectionAttempts: 5,      // optional: try 5 times
+  timeout: 2000,                // optional: 2s connection timeout
+});
+
+socket.on("connect", () => {
+  console.log("✅ Socket connected:", socket.id);
+});
+socket.on("connect_error", (err) => {
+  console.warn("❌ Socket connect_error:", err.message);
+});
+socket.on("disconnect", (reason) => {
+  console.log("⚠️ Socket disconnected:", reason);
+});
 
 let socket = io(); // Connect to the server
 // Generate a unique ID for each new piece
@@ -82,6 +99,7 @@ function init() {
   plane.position.set(0, 0, 1000);
   plane.receiveShadow = true;
   scene.add(plane);
+  plane.name = 'floor';
 
   // Add orbit controls
   let controls = new OrbitControls(camera, renderer.domElement);
@@ -200,19 +218,6 @@ function createOrUpdatePiece(piece) {
   }
 }
 
-// Emit a new piece instantiation to the server
-function instantiateNewPiece() {
-  const newPiece = {
-    id: generateUniqueId(),
-    position: { x: Math.random() * 400 - 200, y: 0, z: Math.random() * 400 - 200 },
-    rotation: { x: 0, y: 0, z: 0 },
-    color: "#FF6347", // Assign color (optional)
-  };
-
-  // Send the new piece data to the server
-  socket.emit('instantiatePiece', newPiece);
-}
-
 // Emit piece updates (position or rotation) to the server
 function updatePiece(pieceData) {
   socket.emit('updatePiece', pieceData); // Send updated piece data to the server
@@ -314,24 +319,46 @@ let rotationInProgress = false; // Prevent continuous rotation while shift is he
 
 
 
-// Listen for shift key presses
-document.addEventListener('keydown', onKeyDown);
-// 1) Hook Space key to instantiate
-document.addEventListener('keydown', (e) => {
+// Listen for key presses
+document.addEventListener('keydown', function(e) {
+  // SPACE: instantiate a new piece
   if (e.code === 'Space' && !dragging) {
-    e.preventDefault();        // stop page scroll
+    e.preventDefault();        // stop the page from scrolling
     instantiateNewPiece();
+    return;
   }
-});
-function onKeyDown(event) {
-  if (event.key === 'Shift' && pickedObject) {
-    // Only rotate if the Shift key is pressed and an object is selected
+
+  // SHIFT: rotate selected piece
+  if (e.key === 'Shift' && pickedObject) {
     rotateObjectBy45Degrees();
   }
-  // if (event.key === ' ' && !dragging) {  // Space bar press and not dragging
-  //   instantiateNewPiece();
-  // }
+});
+
+function instantiateNewPiece() {
+  // 1. Raycast to find the floor‐hit under the mouse
+  raycaster.setFromCamera(mouse, camera);
+  const floor = scene.getObjectByName('floor');
+  const hits = raycaster.intersectObject(floor, true);
+  if (!hits.length) return;
+  const hit = hits[0].point;
+
+  // 2. Build your piece data
+  const pieceData = {
+    id: generateUniqueId(),
+    position: { x: hit.x, y: hit.y, z: hit.z },
+    rotation: { x: 0, y: 0, z: 0 },
+    color: rainbowColors[currentModelIndex],
+    modelIndex: currentModelIndex
+  };
+
+  // 3. Send to server
+  socket.emit('instantiatePiece', pieceData);
+
+  // 4. Advance your index locally too (server also cycles)
+  currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
 }
+
+
 
 function updateScene() {
   // Loop through all pieces to add or update them in the scene
