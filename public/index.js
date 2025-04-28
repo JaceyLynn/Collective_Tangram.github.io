@@ -308,6 +308,41 @@ function generateUniqueId() {
   return 'piece-' + Math.random().toString(36).substr(2, 9);
 }
 
+function updateScene() {
+  // Loop through all pieces to add or update them in the scene
+  pieces.forEach((piece) => {
+    let existingPiece = scene.getObjectByName(piece.id); // Check if the piece already exists in the scene
+    
+    if (existingPiece) {
+      // Update the existing piece's position and rotation
+      existingPiece.position.set(piece.position.x, piece.position.y, piece.position.z);
+      existingPiece.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
+    } else {
+      // Create a new piece if it doesn't exist
+      const loader = new GLTFLoader();
+      
+      loader.load(modelLinks[currentModelIndex], (gltf) => {
+        let model = gltf.scene;
+        model.name = piece.id; // Assign the piece a unique name based on its ID
+        
+        model.position.set(piece.position.x, piece.position.y, piece.position.z);
+        model.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
+
+        // Set the piece's color (could be based on piece.color)
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.material = new THREE.MeshStandardMaterial({
+              color: piece.color, // Use the color from the piece data
+            });
+          }
+        });
+
+        // Add the new piece to the scene
+        scene.add(model);
+      });
+    }
+  });
+}
 
 // Function to rotate the object by 45 degrees around its center
 function rotateObjectBy45Degrees() {
