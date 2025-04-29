@@ -321,53 +321,29 @@ let rotationInProgress = false; // Prevent continuous rotation while shift is he
 //   }
 // });
 
-// 1) Hook Space key to instantiate
-document.addEventListener('keydown', (e) => {
-  if (e.code === 'Space' && !dragging) {
-    e.preventDefault();        // stop page scroll
-    instantiateNewPiece();
-  }
-});
-
-// 2) Instantiate a new piece at mouse position
 function instantiateNewPiece() {
-  // compute mouse ray → floor intersection
+  // 1. Raycast to find the floor‐hit under the mouse
   raycaster.setFromCamera(mouse, camera);
-  const floor = scene.getObjectByName('floor');  
-  const intersects = raycaster.intersectObject(floor, true);
-  if (!intersects.length) return;   // no floor hit? bail
+  const floor = scene.getObjectByName("floor");
+  const hits = raycaster.intersectObject(floor, true);
+  if (!hits.length) return;
+  const hit = hits[0].point;
 
-  const hit = intersects[0].point;
+  // 2. Build your piece data
+  const pieceData = {
+    id: generateUniqueId(),
+    position: { x: hit.x, y: hit.y, z: hit.z },
+    rotation: { x: 0, y: 0, z: 0 },
+    color: rainbowColors[currentModelIndex],
+    modelIndex: currentModelIndex,
+  };
 
-  // load next model
-  const link = modelLinks[currentModelIndex];
-  const loader = new GLTFLoader();
-  loader.load(link, (gltf) => {
-    const model = gltf.scene;
-    // set initial position
-    model.position.set(hit.x, hit.y, hit.z);
-    // color it
-    model.traverse(c => {
-      if (c.isMesh) {
-        c.castShadow = true;
-        c.receiveShadow = true;
-        c.material = new THREE.MeshStandardMaterial({
-          color: rainbowColors[currentModelIndex]
-        });
-      }
-    });
-    // add to scene & interaction map
-    scene.add(model);
-    myModels.set(model, 'draggable');
+  // 3. Send to server
+  socket.emit("instantiatePiece", pieceData);
 
-    // optional: store modelIndex if you need it later
-    model.userData.modelIndex = currentModelIndex;
-
-    // advance (and wrap) the index
-    currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
-  });
+  // 4. Advance your index locally too (server also cycles)
+  currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
 }
-
 
 function updateScene() {
   // Loop through all pieces to add or update them in the scene

@@ -38,7 +38,7 @@ io.on('connection', (socket) => {
       playerInstantiations[socket.id]++;
 
       // Increment and cycle the model index
-      currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
+      currentModelIndex = (currentModelIndex + 1) % 7;
 
       // Broadcast the new piece to all players
       io.emit('newPiece', pieceData);
