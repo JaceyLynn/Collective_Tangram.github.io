@@ -333,7 +333,6 @@ document.addEventListener('keydown', (e) => {
 function instantiateNewPiece() {
   // compute mouse ray → floor intersection
   raycaster.setFromCamera(mouse, camera);
-  // assuming your floor is scene.children[1]; better: give floor a name or ref
   const floor = scene.getObjectByName('floor');  
   const intersects = raycaster.intersectObject(floor, true);
   if (!intersects.length) return;   // no floor hit? bail
