@@ -115,37 +115,34 @@ mongoose.connection.once("open", async () => {
     socket.on("pieceAction", async ({ type, piece, data, userId, ts }) => {
       // ─────────── ADD ───────────
       if (type === "add") {
-        // limit per player
+        // enforce per-player limit…
         if (playerInstantiations[socket.id] >= 7) {
           return socket.emit("limitReached");
         }
 
-        // prevent double‐adds
-        if (pieces.find((p) => p.id === piece.id)) {
-          return;
-        }
+        // prevent duplicates
+        if (pieces.find((p) => p.id === piece.id)) return;
 
-        // build the new dynamic piece
+        // use the client‑supplied modelIndex, not your own counter
         const newPiece = {
           id: piece.id,
-          modelIndex: currentModelIndex,
+          modelIndex: piece.modelIndex, // ← this line changed
           color: piece.color,
           position: data.position,
           rotation: data.rotation,
+          static: false,
           lastModifiedBy: userId,
           ts,
-          static: false,
         };
 
-        // update in‑memory state
+        // record it
         pieces.push(newPiece);
         playerInstantiations[socket.id]++;
-        currentModelIndex = (currentModelIndex + 1) % rainbowColors.length;
 
-        // broadcast to everyone
+        // broadcast to everyone (including the origin)
         io.emit("newPiece", newPiece);
 
-        // persist & log
+        // persist & log…
         await Piece.findByIdAndUpdate(
           newPiece.id,
           { $set: newPiece },

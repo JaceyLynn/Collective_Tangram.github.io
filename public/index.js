@@ -314,44 +314,40 @@ let rotationAngle = 0; // Track current rotation angle
 let rotationInProgress = false; // Prevent continuous rotation while shift is held
 
 function instantiateNewPiece() {
-  // 1) Raycast at the last mouse.x/y
+  // raycast once at the current mouse.x/y
   raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObject(scene.getObjectByName("floor"), true);
+  const floor = scene.getObjectByName("floor");
+  const hits  = raycaster.intersectObject(floor, true);
   if (!hits.length) return;
   const hit = hits[0].point;
 
-  // 2) Build your pieceData
-  const pieceData = {
-    id: generateUniqueId(),
-    modelIndex: currentModelIndex,
-    color: rainbowColors[currentModelIndex],
-    position: { x: hit.x, y: hit.y, z: hit.z },
-    rotation: { x: 0, y: 0, z: 0 },
-  };
+  // generate an id and capture the index you want
+  const id          = generateUniqueId();
+  const chosenIndex = currentModelIndex;
 
-  // 3) Show it immediately yourself
-  createOrUpdatePiece(pieceData);
-
-  // 4) Build and emit the action just once
+  // build the action with your chosen modelIndex
   const action = {
-    type: "add",
+    type:  "add",
     piece: {
-      id: pieceData.id,
-      modelIndex: pieceData.modelIndex,
-      color: pieceData.color,
+      id:         id,
+      modelIndex: chosenIndex,
+      color:      rainbowColors[chosenIndex]
     },
     data: {
-      position: pieceData.position,
-      rotation: pieceData.rotation,
+      position: { x: hit.x, y: hit.y, z: hit.z },
+      rotation: { x: 0,     y: 0,     z: 0     }
     },
     userId: socket.id,
-    ts: Date.now(),
+    ts:     Date.now()
   };
+
+  // emit *only* — don’t render locally!
   socket.emit("pieceAction", action);
 
-  // 5) Then advance your index exactly once
-  currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
+  // advance your local counter just for the *next* selection
+  currentModelIndex = (chosenIndex + 1) % modelLinks.length;
 }
+
 
 function updateScene() {
   // Loop through all pieces to add or update them in the scene
