@@ -61,9 +61,14 @@ function init() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   document.body.appendChild(renderer.domElement);
+  
+  
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+// color: white, intensity: 0.4 (tweak up/down as needed)
+scene.add(ambientLight);
   // Set up the light with shadow
   const light = new THREE.DirectionalLight(0xffffff, 4);
-  light.position.set(100, 300, 200);
+  light.position.set(300, 1000, 100);
   light.castShadow = true;
   light.shadow.mapSize.width = 2048;
   light.shadow.mapSize.height = 2048;
@@ -85,26 +90,35 @@ function init() {
   scene.add(plane);
   plane.name = "floor";
 
-// wall parameters
+  
+  const wallTexture = new THREE.TextureLoader().load(
+  "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/TCom_StrandedBambooPlate_1K_albedo.png?v=1740983774496"
+);
+// Enable wrapping so it repeats
+wallTexture.wrapS = THREE.RepeatWrapping;
+wallTexture.wrapT = THREE.RepeatWrapping;
+// Tile it along the length (3400 units) and height (400 units)
+// You can tweak these repeat values to taste:
+wallTexture.repeat.set(4, 1);  
+// wall dimensions
 const wallLength    = 3400;
 const wallHeight    = 400;
-const wallThickness =  50;
+const wallThickness =   50;
 const halfSize      = wallLength / 2;
 const halfThick     = wallThickness / 2;
 
-// shared material
-const wallMat = new THREE.MeshStandardMaterial({ color: "#7c7c7c" });
+// shared wall material using the texture
+const wallMat = new THREE.MeshStandardMaterial({
+  map: wallTexture,
+  side: THREE.DoubleSide
+});
 
 // ─── North wall ───
 const northGeo = new THREE.BoxGeometry(wallLength, wallHeight, wallThickness);
 const northWall = new THREE.Mesh(northGeo, wallMat);
-northWall.position.set(
-  0,                   // x
-  wallHeight / 2,      // y (raise by half the height)
-  halfSize + halfThick // z just beyond the floor edge
-);
+northWall.position.set(0, wallHeight / 2, halfSize + halfThick);
+northWall.castShadow = true;
 northWall.receiveShadow = true;
-northWall.castShadow    = true;
 scene.add(northWall);
 
 // ─── South wall ───
@@ -115,19 +129,16 @@ scene.add(southWall);
 // ─── East wall ───
 const eastGeo = new THREE.BoxGeometry(wallThickness, wallHeight, wallLength);
 const eastWall = new THREE.Mesh(eastGeo, wallMat);
-eastWall.position.set(
-  halfSize + halfThick,  // x just beyond the floor edge
-  wallHeight / 2,        // y
-  0                      // z
-);
+eastWall.position.set(halfSize + halfThick, wallHeight / 2, 0);
+eastWall.castShadow = true;
 eastWall.receiveShadow = true;
-eastWall.castShadow    = true;
 scene.add(eastWall);
 
 // ─── West wall ───
 const westWall = eastWall.clone();
 westWall.position.set(-halfSize - halfThick, wallHeight / 2, 0);
 scene.add(westWall);
+
 
 
   // Add orbit controls
