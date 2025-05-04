@@ -70,9 +70,7 @@ function init() {
   light.shadow.camera.near = 0.5;
   light.shadow.camera.far = 5000;
   scene.add(light);
-  
-  
-  
+
   //floor plate
   const geometry1 = new THREE.PlaneGeometry(4000, 4000);
   const material1 = new THREE.MeshStandardMaterial({
@@ -109,29 +107,29 @@ function init() {
   socket = io({
     transports: ["websocket"], // <-- no polling, only ws
   });
-  
+
   // once, at init time:
-window.addEventListener("mousemove", e => {
-  mouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
-  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-});
+  window.addEventListener("mousemove", (e) => {
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  });
 
   socket.on("connect", () => {
     console.log("Connected over WebSocket, socket id:", socket.id);
   });
 
   // --- new multiplayer piece handlers ---
-socket.on("initialize", existingPieces => {
-  pieces = existingPieces;
-  existingPieces.forEach(p => createOrUpdatePiece(p));
-});
+  socket.on("initialize", (existingPieces) => {
+    pieces = existingPieces;
+    existingPieces.forEach((p) => createOrUpdatePiece(p));
+  });
 
   socket.on("newPiece", (newPiece) => {
     if (!pieces.find((p) => p.id === newPiece.id)) {
       pieces.push(newPiece);
       createOrUpdatePiece(newPiece);
     }
- socket.on("pieceUpdated", createOrUpdatePiece);
+    socket.on("pieceUpdated", createOrUpdatePiece);
   });
 
   socket.on("pieceUpdated", (updated) => {
@@ -146,12 +144,12 @@ socket.on("initialize", existingPieces => {
     alert("You've reached your 7-piece limit!");
   });
 
-document.addEventListener("keydown", (e) => {
-  if (e.code === "Space" && !dragging) {
-    console.log("Space pressed! dragging:", dragging);
-    e.preventDefault();
-    instantiateNewPiece();
-  }
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space" && !dragging) {
+      console.log("Space pressed! dragging:", dragging);
+      e.preventDefault();
+      instantiateNewPiece();
+    }
     if (e.key === "Shift" && pickedObject) {
       rotateObjectBy45Degrees();
     }
@@ -198,7 +196,8 @@ function createOrUpdatePiece(piece) {
       // Add the new piece to the scene
       scene.add(model);
       // ← make it draggable!
-      myModels.set(model, "draggable");
+      const isDraggable = !piece.static;
+      myModels.set(model, isDraggable ? "draggable" : "static");
     });
   }
 }
@@ -264,10 +263,10 @@ function onMouseDown(event) {
 //move with mouse
 function onMouseMove(event) {
   // store last pointer coords globally
-window.addEventListener("mousemove", e => {
-  mouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
-  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-});
+  window.addEventListener("mousemove", (e) => {
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  });
 
   if (dragging && pickedObject && !isRotating) {
     console.log("Mouse moving while dragging...");
@@ -328,11 +327,11 @@ function instantiateNewPiece() {
 
   // 2) Build your pieceData
   const pieceData = {
-    id:         generateUniqueId(),
+    id: generateUniqueId(),
     modelIndex: currentModelIndex,
-    color:      rainbowColors[currentModelIndex],
-    position:   { x: hit.x, y: hit.y, z: hit.z },
-    rotation:   { x: 0,     y: 0,     z: 0     }
+    color: rainbowColors[currentModelIndex],
+    position: { x: hit.x, y: hit.y, z: hit.z },
+    rotation: { x: 0, y: 0, z: 0 },
   };
 
   // 3) Show it immediately yourself
@@ -340,18 +339,18 @@ function instantiateNewPiece() {
 
   // 4) Build and emit the action just once
   const action = {
-    type:   "add",
-    piece:  {
-      id:         pieceData.id,
+    type: "add",
+    piece: {
+      id: pieceData.id,
       modelIndex: pieceData.modelIndex,
-      color:      pieceData.color
+      color: pieceData.color,
     },
-    data:   {
+    data: {
       position: pieceData.position,
-      rotation: pieceData.rotation
+      rotation: pieceData.rotation,
     },
     userId: socket.id,
-    ts:     Date.now()
+    ts: Date.now(),
   };
   socket.emit("pieceAction", action);
 

@@ -68,8 +68,9 @@ mongoose.connection.once("open", async () => {
       color,
       position: { x: 0, y: 0, z: 0 },
       rotation: { x: 0, y: 0, z: 0 },
-      lastModifiedBy: "system",
       ts: new Date(),
+      lastModifiedBy: "system",
+      static: true, // ← here!
     }));
     await Piece.insertMany(templates);
     pieces = templates;
@@ -88,9 +89,6 @@ mongoose.connection.once("open", async () => {
 
     socket.on("pieceAction", async ({ type, piece, data, userId, ts }) => {
       if (type === "add") {
-        if (playerInstantiations[socket.id] >= 7) {
-          return socket.emit("limitReached");
-        }
         const newPiece = {
           id: piece.id,
           modelIndex: currentModelIndex,
@@ -99,6 +97,7 @@ mongoose.connection.once("open", async () => {
           rotation: data.rotation,
           lastModifiedBy: userId,
           ts,
+          static: false, // ← and here!
         };
         pieces.push(newPiece);
         playerInstantiations[socket.id]++;
