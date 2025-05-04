@@ -209,10 +209,21 @@ function createOrUpdatePiece(piece) {
   }
 }
 
-// Emit piece updates (position or rotation) to the server
-function updatePiece(pieceData) {
-  socket.emit("updatePiece", pieceData); // Send updated piece data to the server
-}
+// // Emit piece updates (position or rotation) to the server
+// function updatePiece(pieceData) {
+// // client-side, whenever a piece is added, moved or rotated:
+// const action = {
+//   type:   "move" | "rotate" | "add",
+//   piece:  { id, modelIndex, color },
+//   data:   {            // depending on type
+//     position?: { x,y,z },
+//     rotation?: { x,y,z }
+//   },
+//   userId: socket.id,   // who made it
+//   ts:     Date.now()
+// };
+// socket.emit("pieceAction", action);
+// }
 
 //initiate drag and rotate
 function onMouseDown(event) {
@@ -296,19 +307,20 @@ function onMouseMove(event) {
       console.log("Updated position:", pickedObject.position);
 
       // tell server / peers about it
-      updatePiece({
-        id: pickedObject.name,
-        position: {
-          x: pickedObject.position.x,
-          y: pickedObject.position.y,
-          z: pickedObject.position.z,
-        },
-        rotation: {
-          x: pickedObject.rotation.x,
-          y: pickedObject.rotation.y,
-          z: pickedObject.rotation.z,
-        },
-      });
+const action = {
+  type: "move",
+  piece: { id: pickedObject.name },
+  data: {
+    position: {
+      x: pickedObject.position.x,
+      y: pickedObject.position.y,
+      z: pickedObject.position.z
+    }
+  },
+  userId: socket.id,
+  ts: Date.now()
+};
+socket.emit("pieceAction", action);
       createTrail(pickedObject.position, pickedObject);
     }
   }
@@ -350,16 +362,21 @@ function instantiateNewPiece() {
   const hit = hits[0].point;
 
   // 2. Build your piece data
-  const pieceData = {
-    id: generateUniqueId(),
-    position: { x: hit.x, y: hit.y, z: hit.z },
-    rotation: { x: 0, y: 0, z: 0 },
-    color: rainbowColors[currentModelIndex],
-    modelIndex: currentModelIndex,
+  const action = {
+    type: "add",
+    piece: {
+      id: pieceData.id,
+      modelIndex: pieceData.modelIndex,
+      color: pieceData.color
+    },
+    data: {
+      position: pieceData.position,
+      rotation: pieceData.rotation
+    },
+    userId: socket.id,
+    ts: Date.now()
   };
-
-  // 3. Send to server
-  socket.emit("instantiatePiece", pieceData);
+  socket.emit("pieceAction", action);
 
   // 4. Advance your index locally too (server also cycles)
   currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
@@ -430,20 +447,20 @@ function rotateObjectBy45Degrees() {
   let angleInRadians = THREE.MathUtils.degToRad(rotationAngle); // Convert to radians
   pickedObject.rotation.y = angleInRadians; // Rotate around the Y-axis (horizontal)
 
-  // let server / peers know
-  updatePiece({
-    id: pickedObject.name,
-    position: {
-      x: pickedObject.position.x,
-      y: pickedObject.position.y,
-      z: pickedObject.position.z,
+const action = {
+    type: "rotate",
+    piece: { id: pickedObject.name },
+    data: {
+      rotation: {
+        x: pickedObject.rotation.x,
+        y: pickedObject.rotation.y,
+        z: pickedObject.rotation.z
+      }
     },
-    rotation: {
-      x: pickedObject.rotation.x,
-      y: pickedObject.rotation.y,
-      z: pickedObject.rotation.z,
-    },
-  });
+    userId: socket.id,
+    ts: Date.now()
+  };
+  socket.emit("pieceAction", action);
 
   // Allow the rotation to complete before another key press
   setTimeout(() => {
