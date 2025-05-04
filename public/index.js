@@ -159,48 +159,43 @@ function init() {
 
 // Function to create or update pieces in the scene
 function createOrUpdatePiece(piece) {
-  // Check if the piece already exists by ID
-  let existingPiece = scene.getObjectByName(piece.id);
-
-  if (existingPiece) {
-    // Update existing piece's position and rotation
-    existingPiece.position.set(
-      piece.position.x,
-      piece.position.y,
-      piece.position.z
-    );
-    existingPiece.rotation.set(
-      piece.rotation.x,
-      piece.rotation.y,
-      piece.rotation.z
-    );
-  } else {
-    // Create a new piece if it doesn't exist
-    const loader = new GLTFLoader();
-
-    loader.load(modelLinks[piece.modelIndex], (gltf) => {
-      let model = gltf.scene;
-      model.name = piece.id; // Ensure the piece has a unique ID
-      model.position.set(piece.position.x, piece.position.y, piece.position.z);
-      model.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
-
-      // Apply color to the piece
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.material = new THREE.MeshStandardMaterial({
-            color: piece.color || "#FFFFFF", // Default to white if no color is provided
-          });
-        }
-      });
-
-      // Add the new piece to the scene
-      scene.add(model);
-      // ← make it draggable!
-      const isDraggable = !piece.static;
-      myModels.set(model, isDraggable ? "draggable" : "static");
-    });
+  // If it’s already in the scene, just update its transform
+  let existing = scene.getObjectByName(piece.id);
+  if (existing) {
+    existing.position.set(piece.position.x, piece.position.y, piece.position.z);
+    existing.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
+    return;
   }
+
+  // Otherwise, load it for the first time
+  const loader = new GLTFLoader();
+  loader.load(modelLinks[piece.modelIndex], (gltf) => {
+    const model = gltf.scene;
+    model.name = piece.id;
+
+    // Apply position & rotation
+    model.position.set(piece.position.x, piece.position.y, piece.position.z);
+    model.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
+
+    // Colorize
+    model.traverse(c => {
+      if (c.isMesh) {
+        c.material = new THREE.MeshStandardMaterial({ color: piece.color });
+      }
+    });
+
+    // Mark as static or draggable
+    model.userData.static = Boolean(piece.static);
+    if (piece.static) {
+      myModels.set(model, "static");
+    } else {
+      myModels.set(model, "draggable");
+    }
+
+    scene.add(model);
+  });
 }
+
 
 //initiate drag and rotate
 function onMouseDown(event) {

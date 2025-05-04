@@ -68,10 +68,11 @@ mongoose.connection.once("open", async () => {
       color,
       position: { x: 0, y: 0, z: 0 },
       rotation: { x: 0, y: 0, z: 0 },
-      ts: new Date(),
       lastModifiedBy: "system",
-      static: true, // ← here!
+      ts: new Date(),
+      static: true, // ← mark all templates static
     }));
+
     await Piece.insertMany(templates);
     pieces = templates;
   }
