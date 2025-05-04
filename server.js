@@ -1,3 +1,40 @@
+require('dotenv').config();
+const mongoose = require('mongoose');
+
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser:    true,
+    useUnifiedTopology: true
+  })
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
+
+const { Schema, model } = mongoose;
+
+// Persistent piece state
+const pieceSchema = new Schema({
+  _id:         String,   // use your piece.id as the document _id
+  modelIndex:  Number,
+  color:       String,
+  position:   { x:Number, y:Number, z:Number },
+  rotation:   { x:Number, y:Number, z:Number },
+  lastModifiedBy: String,
+  ts:          Date
+});
+
+const Piece = model('Piece', pieceSchema);
+
+// Optional: log every add/move/rotate
+const actionSchema = new Schema({
+  pieceId: String,
+  type:    String,
+  data:    Schema.Types.Mixed,
+  userId:  String,
+  ts:      Date
+});
+
+const Action = model('Action', actionSchema);
+
 const express   = require('express');
 const http      = require('http');
 const socketIo  = require('socket.io');
