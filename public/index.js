@@ -23,10 +23,10 @@ let clickZ = 0;
 let currentModelIndex = 0; // Start with the first model
 let modelLinks = [];
 
-// Load texture
+// Load PLANE texture
 const textureLoader = new THREE.TextureLoader();
 const customTexture = textureLoader.load(
-  "https://cdn.glitch.global/d2f3e6de-4097-4e73-b207-af04bf5111cd/tangram%20pattern%20wood.png?v=1746393376674"
+  "https://cdn.glitch.global/9e349498-62d1-4bcc-bd1c-bbf3a5b4ac51/tangram%20pattern%20wood.png?v=1746398807476"
 );
 
 // puzzle colors
