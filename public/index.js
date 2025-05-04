@@ -153,11 +153,12 @@ function init() {
     alert("You've reached your 7-piece limit!");
   });
 
-  document.addEventListener("keydown", (e) => {
-    if (e.code === "Space" && !dragging) {
-      e.preventDefault();
-      instantiateNewPiece();
-    }
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space" && !dragging) {
+    console.log("Space pressed! dragging:", dragging);
+    e.preventDefault();
+    instantiateNewPiece();
+  }
     if (e.key === "Shift" && pickedObject) {
       rotateObjectBy45Degrees();
     }
@@ -208,22 +209,6 @@ function createOrUpdatePiece(piece) {
     });
   }
 }
-
-// // Emit piece updates (position or rotation) to the server
-// function updatePiece(pieceData) {
-// // client-side, whenever a piece is added, moved or rotated:
-// const action = {
-//   type:   "move" | "rotate" | "add",
-//   piece:  { id, modelIndex, color },
-//   data:   {            // depending on type
-//     position?: { x,y,z },
-//     rotation?: { x,y,z }
-//   },
-//   userId: socket.id,   // who made it
-//   ts:     Date.now()
-// };
-// socket.emit("pieceAction", action);
-// }
 
 //initiate drag and rotate
 function onMouseDown(event) {
@@ -285,8 +270,11 @@ function onMouseDown(event) {
 
 //move with mouse
 function onMouseMove(event) {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  // store last pointer coords globally
+window.addEventListener("mousemove", e => {
+  mouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+});
 
   if (dragging && pickedObject && !isRotating) {
     console.log("Mouse moving while dragging...");
@@ -307,20 +295,20 @@ function onMouseMove(event) {
       console.log("Updated position:", pickedObject.position);
 
       // tell server / peers about it
-const action = {
-  type: "move",
-  piece: { id: pickedObject.name },
-  data: {
-    position: {
-      x: pickedObject.position.x,
-      y: pickedObject.position.y,
-      z: pickedObject.position.z
-    }
-  },
-  userId: socket.id,
-  ts: Date.now()
-};
-socket.emit("pieceAction", action);
+      const action = {
+        type: "move",
+        piece: { id: pickedObject.name },
+        data: {
+          position: {
+            x: pickedObject.position.x,
+            y: pickedObject.position.y,
+            z: pickedObject.position.z,
+          },
+        },
+        userId: socket.id,
+        ts: Date.now(),
+      };
+      socket.emit("pieceAction", action);
       createTrail(pickedObject.position, pickedObject);
     }
   }
@@ -338,47 +326,46 @@ let rotationStep = 45; // 45 degrees per shift press
 let rotationAngle = 0; // Track current rotation angle
 let rotationInProgress = false; // Prevent continuous rotation while shift is held
 
-// // Listen for key presses
-// document.addEventListener('keydown', function(e) {
-//   // SPACE: instantiate a new piece
-//   if (e.code === 'Space' && !dragging) {
-//     e.preventDefault();        // stop the page from scrolling
-//     instantiateNewPiece();
-//     return;
-//   }
-
-//   // SHIFT: rotate selected piece
-//   if (e.key === 'Shift' && pickedObject) {
-//     rotateObjectBy45Degrees();
-//   }
-// });
-
 function instantiateNewPiece() {
-  // 1. Raycast to find the floor‐hit under the mouse
+  // 0. make sure mouse coords are fresh
   raycaster.setFromCamera(mouse, camera);
+
+  // 1. find where on the floor you clicked
   const floor = scene.getObjectByName("floor");
   const hits = raycaster.intersectObject(floor, true);
   if (!hits.length) return;
   const hit = hits[0].point;
 
-  // 2. Build your piece data
+  // 2. build the pieceData you’ll both render locally and send
+  const pieceData = {
+    id: generateUniqueId(),
+    modelIndex: currentModelIndex,
+    color: rainbowColors[currentModelIndex],
+    position: { x: hit.x, y: hit.y, z: hit.z },
+    rotation: { x: 0, y: 0, z: 0 },
+  };
+    createOrUpdatePiece(pieceData);      // ← immediate local add
+  socket.emit("pieceAction", action);  // ← for everyone else
+  currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
+
+  // 3. emit a unified “pieceAction” add event
   const action = {
     type: "add",
     piece: {
       id: pieceData.id,
       modelIndex: pieceData.modelIndex,
-      color: pieceData.color
+      color: pieceData.color,
     },
     data: {
       position: pieceData.position,
-      rotation: pieceData.rotation
+      rotation: pieceData.rotation,
     },
     userId: socket.id,
-    ts: Date.now()
+    ts: Date.now(),
   };
   socket.emit("pieceAction", action);
 
-  // 4. Advance your index locally too (server also cycles)
+  // 4. advance your color/model index for next time
   currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
 }
 
@@ -447,18 +434,18 @@ function rotateObjectBy45Degrees() {
   let angleInRadians = THREE.MathUtils.degToRad(rotationAngle); // Convert to radians
   pickedObject.rotation.y = angleInRadians; // Rotate around the Y-axis (horizontal)
 
-const action = {
+  const action = {
     type: "rotate",
     piece: { id: pickedObject.name },
     data: {
       rotation: {
         x: pickedObject.rotation.x,
         y: pickedObject.rotation.y,
-        z: pickedObject.rotation.z
-      }
+        z: pickedObject.rotation.z,
+      },
     },
     userId: socket.id,
-    ts: Date.now()
+    ts: Date.now(),
   };
   socket.emit("pieceAction", action);
 
