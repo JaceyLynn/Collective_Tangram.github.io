@@ -71,9 +71,9 @@ const controls = new FirstPersonControls(
   camera,
   renderer,
   () => instantiateNewPiece(),     // Space → create
-  () => rotatePieceBy45()   // R → rotate nearest
+  () => rotateObjectBy45Degrees()   // R → rotate nearest
 );
-
+controls.prevTime = performance.now();
 // 2) Pushes from collisions should be sent to server
 controls.setPushCallback((id, pos) => {
   socket.emit("pieceAction", {
@@ -84,7 +84,6 @@ controls.setPushCallback((id, pos) => {
     ts:    Date.now()
   });
 });
-  controls.prevTime = performance.now();
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
 // color: white, intensity: 0.4 (tweak up/down as needed)
 scene.add(ambientLight);

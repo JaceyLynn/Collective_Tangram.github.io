@@ -1,414 +1,166 @@
+// public/FirstPersonControls.js
 import * as THREE from "three";
 
 export class FirstPersonControls {
-  constructor(scene, camera, renderer) {
-    this.scene = scene;
-    this.camera = camera;
-    this.renderer = renderer;
+  /**
+   * @param {THREE.Scene}   scene
+   * @param {THREE.Camera}  camera
+   * @param {THREE.Renderer} renderer
+   * @param {Function}      instantiateCb  // called on Space press
+   * @param {Function}      rotateCb       // called on R press
+   */
+  constructor(scene, camera, renderer, instantiateCb, rotateCb) {
+    this.scene         = scene;
+    this.camera        = camera;
+    this.renderer      = renderer;
+    this.instantiateCb = instantiateCb;
+    this.rotateCb      = rotateCb;
 
-    this.cameraHeight = 1.5;
+    // movement state
+    this.moveForward   = false;
+    this.moveBackward  = false;
+    this.moveLeft      = false;
+    this.moveRight     = false;
 
-    this.raycaster = new THREE.Raycaster();
+    this.velocity      = new THREE.Vector3();
+    this.direction     = new THREE.Vector3();
+    this.prevTime      = performance.now();
 
-    this.setupControls();
-    this.setupCollisionDetection();
+    // Height at which the camera “floats” above the floor
+    this.cameraHeight  = camera.position.y;
 
-    this.velocity.y = 0;
+    // For pushing pieces out of the way
+    this.raycaster     = new THREE.Raycaster();
+    this.onPush        = null;  // you can set via setPushCallback()
 
-    this.gravity = true;
-
-    // variables for click-and-drag controls
-    this.onPointerDownPointerX = 0;
-    this.onPointerDownPointerY = 0;
-    this.lon = 180;
-    this.lat = 0;
-    this.phi = 0;
-    this.theta = 0;
-    this.isUserInteracting = false;
-    this.camera.target = new THREE.Vector3(0, 0, 0);
+    this._bindEvents();
   }
 
-  // Set up pointer lock controls and corresponding event listeners
-  setupControls() {
-    // 
+  _bindEvents() {
+    // Keyboard
+    window.addEventListener("keydown", this._onKeyDown.bind(this));
+    window.addEventListener("keyup",   this._onKeyUp.bind(this));
 
-    this.moveForward = false;
-    this.moveBackward = false;
-    this.moveLeft = false;
-    this.moveRight = false;
-    // this.canJump = false;
-
-    this.prevTime = performance.now();
-    this.velocity = new THREE.Vector3();
-    this.direction = new THREE.Vector3();
-    this.vertex = new THREE.Vector3();
-    this.color = new THREE.Color();
-
-    document.addEventListener(
-      "keydown",
-      (event) => {
-        switch (event.keyCode) {
-          case 38: // up
-          case 87: // w
-            this.moveForward = true;
-            break;
-
-          case 37: // left
-          case 65: // a
-            this.moveLeft = true;
-            break;
-
-          case 40: // down
-          case 83: // s
-            this.moveBackward = true;
-            break;
-
-          case 39: // right
-          case 68: // d
-            this.moveRight = true;
-            break;
-
-          // case 32: // space
-          //   if (this.canJump === true) this.velocity.y = jumpSpeed;
-          //   this.canJump = false;
-          //   break;
-        }
-      },
-      false
-    );
-
-    document.addEventListener(
-      "keyup",
-      (event) => {
-        switch (event.keyCode) {
-          case 38: // up
-          case 87: // w
-            this.moveForward = false;
-            break;
-
-          case 37: // left
-          case 65: // a
-            this.moveLeft = false;
-            break;
-
-          case 40: // down
-          case 83: // s
-            this.moveBackward = false;
-            break;
-
-          case 39: // right
-          case 68: // d
-            this.moveRight = false;
-            break;
-        }
-      },
-      false
-    );
-
-    let domElement = this.renderer.domElement;
-
-    domElement.addEventListener(
-      "mousedown",
-      (e) => {
-        this.onDocumentMouseDown(e);
-      },
-      false
-    );
-    domElement.addEventListener(
-      "mousemove",
-      (e) => {
-        this.onDocumentMouseMove(e);
-      },
-      false
-    );
-    domElement.addEventListener(
-      "mouseup",
-      (e) => {
-        this.onDocumentMouseUp(e);
-      },
-      false
-    );
-  }
-
-  // clear control state every time we reenter the game
-  clearControls() {
-    this.moveForward = false;
-    this.moveBackward = false;
-    this.moveLeft = false;
-    this.moveRight = false;
-    this.canJump = false;
-    this.velocity.x = 0;
-    this.velocity.z = 0;
-    this.velocity.y = 0;
-  }
-
-  update() {
-    this.detectCollisions();
-    this.updateControls();
-    // console.log("phi:", this.phi);
-    // console.log("theta:", this.theta);
-    // console.log("this.lat:", this.lat);
-    // console.log("this.lon:", this.lon);
-  }
-
-  getCollidables() {
-    let collidableMeshList = [];
-    this.scene.traverse(function (object) {
-      if (object.isMesh) {
-        collidableMeshList.push(object);
-      }
+    // Pointer‑lock on click
+    this.renderer.domElement.addEventListener("click", () => {
+      this.renderer.domElement.requestPointerLock();
     });
-    return collidableMeshList;
+    document.addEventListener("pointerlockchange", () => {
+      // You could show/hide UI here if you like
+    });
+
+    // Mouse‐look
+    window.addEventListener("mousemove", this._onMouseMove.bind(this));
   }
 
-  // update for these controls, which are unfortunately not included in the controls directly...
-  // see: https://github.com/mrdoob/three.js/issues/5566
-  updateControls() {
-    let speed = 1000;
+  _onKeyDown(e) {
+    switch (e.code) {
+      case "KeyW": this.moveForward  = true; break;
+      case "KeyS": this.moveBackward = true; break;
+      case "KeyA": this.moveLeft     = true; break;
+      case "KeyD": this.moveRight    = true; break;
+      case "Space": 
+        this.instantiateCb();
+        break;
+      case "KeyR":
+        this.rotateCb();
+        break;
+    }
+  }
 
-    var time = performance.now();
-    var rawDelta = (time - this.prevTime) / 1000;
-    // clamp delta so lower frame rate clients don't end up way far away
-    let delta = Math.min(rawDelta, 0.1);
+  _onKeyUp(e) {
+    switch (e.code) {
+      case "KeyW": this.moveForward  = false; break;
+      case "KeyS": this.moveBackward = false; break;
+      case "KeyA": this.moveLeft     = false; break;
+      case "KeyD": this.moveRight    = false; break;
+    }
+  }
 
+  _onMouseMove(e) {
+    // only when pointer is locked to the canvas
+    if (document.pointerLockElement === this.renderer.domElement) {
+      const movementX = e.movementX || 0;
+      const movementY = e.movementY || 0;
+      // yaw
+      this.camera.rotation.y -= movementX * 0.002;
+      // pitch (clamp so you can't flip upside‐down)
+      this.camera.rotation.x -= movementY * 0.002;
+      this.camera.rotation.x = Math.max(
+        -Math.PI / 2,
+        Math.min(Math.PI / 2, this.camera.rotation.x)
+      );
+    }
+  }
+
+  /** 
+   * Call this from your animation loop.
+   * @param {number} nowMs   current performance.now()
+   */
+  update(nowMs) {
+    const delta = (nowMs - this.prevTime) / 1000;
+    this.prevTime = nowMs;
+
+    // Dampen velocity
     this.velocity.x -= this.velocity.x * 10.0 * delta;
     this.velocity.z -= this.velocity.z * 10.0 * delta;
 
-    this.direction.z = Number(this.moveForward) - Number(this.moveBackward);
-    this.direction.x = Number(this.moveRight) - Number(this.moveLeft);
-    this.direction.normalize(); // this ensures consistent this.movements in all this.directions
+    // Determine movement direction
+    this.direction.z = (this.moveForward  ? 1 : 0) - (this.moveBackward  ? 1 : 0);
+    this.direction.x = (this.moveRight    ? 1 : 0) - (this.moveLeft      ? 1 : 0);
+    this.direction.normalize();
 
-    if (this.moveForward || this.moveBackward) {
-      this.velocity.z -= this.direction.z * speed * delta;
-    }
+    const speed = 200;
+    if (this.moveForward  || this.moveBackward) this.velocity.z -= this.direction.z * speed * delta;
+    if (this.moveLeft     || this.moveRight)    this.velocity.x -= this.direction.x * speed * delta;
 
-    if (this.moveLeft || this.moveRight) {
-      this.velocity.x -= this.direction.x * speed * delta;
-    }
+    // Save old position in case we collide
+    const oldPos = this.camera.position.clone();
 
-    // left-right movement
-    if (
-      (this.velocity.x > 0 && !this.obstacles.left) ||
-      (this.velocity.x < 0 && !this.obstacles.right)
-    ) {
-      this.camera.translateX(-this.velocity.x * delta);
-    }
+    // Strafe and forward/back
+    this.camera.translateX(-this.velocity.x * delta);
+    this.camera.position.add(this._getForwardDir().multiplyScalar(-this.velocity.z * delta));
 
-    // front-back movement
-    if (
-      (this.velocity.z > 0 && !this.obstacles.backward) ||
-      (this.velocity.z < 0 && !this.obstacles.forward)
-    ) {
-      this.camera.position.add(
-        this.getCameraForwardDirAlongXZPlane().multiplyScalar(
-          -this.velocity.z * delta
-        )
-      );
-    }
-
-    // up-down movement
-    // origin point from which we cast a ray downwards
-    // var origin = this.controls.getObject().position.clone()
-    let origin = this.camera.position.clone();
-    origin.set(origin.x, origin.y - this.cameraHeight, origin.z); // set origin to floor level
-
-    // set the raycaster to check downward from this point
-    this.raycaster.set(origin, new THREE.Vector3(0, -1, 0));
-
-    var intersectionsDown = this.raycaster.intersectObjects(
-      this.getCollidables()
-    );
-    var onObject =
-      intersectionsDown.length > 0 && intersectionsDown[0].distance < 0.25;
-    // Here we talkin bout gravity...
-    // this.velocity.y -= 9.8 * 8.0 * delta; // 100.0 = mass
-
-    // // For double-jumping!
-    // if (this.camera.position.y > 1.7 && this.gravity) {
-    //   // less gravity like when we begin
-    //   this.gravity = 2.0;
-    // } else if (this.camera.position.y <= 1.7 && this.gravity) {
-    //   this.gravity = 8.0; // original value
-    // }
-
-    if (this.gravity) {
-      // Add gravity
-      this.velocity.y -= 9.8 * this.gravity * delta; // 100.0 = mass
-    } else {
-      // Otherwise don't and we stay suspended on the Y axis
-      this.velocity.y = 0;
-    }
-
-    if (onObject === true) {
-      this.velocity.y = Math.max(0, this.velocity.y);
-      this.canJump = true;
-    }
-
-    this.camera.position.y += this.velocity.y * delta;
-
-    if (this.camera.position.y < this.cameraHeight) {
-      this.velocity.y = 0;
-      this.camera.position.y = this.cameraHeight;
-      this.canJump = true;
-    }
-
-    this.prevTime = time;
+    // Check collisions and push pieces
+    this._handleCollisions(oldPos);
   }
 
-  getCameraForwardDirAlongXZPlane() {
-    let forwardDir = new THREE.Vector3(0, 0, -1);
-    // apply the camera's current rotation to that direction vector:
-    forwardDir.applyQuaternion(this.camera.quaternion);
-
-    let forwardAlongXZPlane = new THREE.Vector3(forwardDir.x, 0, forwardDir.z);
-    forwardAlongXZPlane.normalize();
-
-    return forwardAlongXZPlane;
+  _getForwardDir() {
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+    forward.y = 0;
+    return forward.normalize();
   }
 
-  //==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//
-  //==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//==//
-  // Collision Detection 🤾‍♀️
+  _handleCollisions(oldPos) {
+    // Cast from just below the camera
+    const origin = this.camera.position.clone();
+    origin.y -= this.cameraHeight;
 
-  /*
-   * setupCollisionDetection()
-   *
-   * Description:
-   * This function sets up collision detection:
-   * 	- creates this.collidableMeshList which will be populated by this.loadFloorModel function
-   * 	- creates this.obstacles object which will be queried by player controls before performing movement
-   * 	- generates arrays of collision detection points, from which we will perform raycasts in this.detectCollisions()
-   *
-   */
-  setupCollisionDetection() {
-    this.obstacles = {
-      forward: false,
-      backward: false,
-      right: false,
-      left: false,
-    };
-  }
+    this.raycaster.set(origin, this._getForwardDir());
+    const hits = this.raycaster.intersectObjects(this.scene.children, true);
 
-  /*
-   * detectCollisions()
-   *
-   * based on method shown here:
-   * https://github.com/stemkoski/stemkoski.github.com/blob/master/Three.js/Collision-Detection.html
-   *
-   * Description:
-   * 1. Creates THREE.Vector3 objects representing the current forward, left, right, backward direction of the character.
-   * 2. For each side of the cube,
-   * 		- uses the collision detection points created in this.setupCollisionDetection()
-   *		- sends a ray out from each point in the direction set up above
-   * 		- if any one of the rays hits an object, set this.obstacles.SIDE (i.e. right or left) to true
-   * 3. Give this.obstacles object to this.controls
-   *
-   * To Do: setup helper function to avoid repetitive code
-   */
-  detectCollisions() {
-    // reset obstacles:
-    this.obstacles = {
-      forward: false,
-      backward: false,
-      right: false,
-      left: false,
-    };
+    if (hits.length > 0) {
+      const hit   = hits[0];
+      const mesh  = hit.object.parent || hit.object;
 
-    // TODO only use XZ components of forward DIR in case we are looking up or down while travelling forward
-    // NOTE: THREE.PlayerControls seems to be backwards (i.e. the 'forward' controls go backwards)...
-    // Weird, but this function respects those directions for the sake of not having to make conversions
-    // https://github.com/mrdoob/three.js/issues/1606
-    var matrix = new THREE.Matrix4();
-    matrix.extractRotation(this.camera.matrix);
-    var backwardDir = new THREE.Vector3(0, 0, 1).applyMatrix4(matrix);
-    var forwardDir = backwardDir.clone().negate();
-    var rightDir = forwardDir
-      .clone()
-      .cross(new THREE.Vector3(0, 1, 0))
-      .normalize();
-    var leftDir = rightDir.clone().negate();
-
-    // TODO more points around avatar so we can't be inside of walls
-    // let pt = this.controls.getObject().position.clone()
-    let pt = this.camera.position.clone();
-
-    this.forwardCollisionDetectionPoints = [pt];
-    this.backwardCollisionDetectionPoints = [pt];
-    this.rightCollisionDetectionPoints = [pt];
-    this.leftCollisionDetectionPoints = [pt];
-
-    // check forward
-    this.obstacles.forward = this.checkCollisions(
-      this.forwardCollisionDetectionPoints,
-      forwardDir
-    );
-    this.obstacles.backward = this.checkCollisions(
-      this.backwardCollisionDetectionPoints,
-      backwardDir
-    );
-    this.obstacles.left = this.checkCollisions(
-      this.leftCollisionDetectionPoints,
-      leftDir
-    );
-    this.obstacles.right = this.checkCollisions(
-      this.rightCollisionDetectionPoints,
-      rightDir
-    );
-  }
-
-  checkCollisions(pts, dir) {
-    // distance at which a collision will be detected and movement stopped (this should be greater than the movement speed per frame...)
-    var detectCollisionDistance = 1;
-
-    for (var i = 0; i < pts.length; i++) {
-      var pt = pts[i].clone();
-
-      this.raycaster.set(pt, dir);
-      this.raycaster.layers.set(3);
-      var collisions = this.raycaster.intersectObjects(this.getCollidables());
-
-      if (
-        collisions.length > 0 &&
-        collisions[0].distance < detectCollisionDistance
-      ) {
-        return true;
+      // If it’s a dynamic piece (user‐added), push it
+      if (!mesh.userData.static) {
+        const pushAmt = (1 - THREE.MathUtils.clamp(hit.distance, 0, 1)) * 10;
+        mesh.position.add(this._getForwardDir().multiplyScalar(pushAmt));
+        if (this.onPush) this.onPush(mesh.name, mesh.position);
       }
-    }
-    return false;
-  }
 
-  onDocumentMouseDown(event) {
-    this.onPointerDownPointerX = event.clientX;
-    this.onPointerDownPointerY = event.clientY;
-    this.onPointerDownLon = this.lon;
-    this.onPointerDownLat = this.lat;
-    this.isUserInteracting = true;
-  }
-
-  onDocumentMouseMove(ev) {
-    if (this.isUserInteracting) {
-      this.lon =
-        (this.onPointerDownPointerX - ev.clientX) * -0.3 +
-        this.onPointerDownLon;
-      this.lat =
-        (ev.clientY - this.onPointerDownPointerY) * -0.3 +
-        this.onPointerDownLat;
-      this.computeCameraOrientation();
+      // Revert the camera so you don’t walk through
+      this.camera.position.copy(oldPos);
     }
   }
 
-  onDocumentMouseUp() {
-    this.isUserInteracting = false;
-  }
-
-  computeCameraOrientation() {
-    this.lat = Math.max(-85, Math.min(85, this.lat));
-    this.phi = THREE.MathUtils.degToRad(90 - this.lat);
-    this.theta = THREE.MathUtils.degToRad(this.lon);
-    this.camera.target.x = 500 * Math.sin(this.phi) * Math.cos(this.theta);
-    this.camera.target.y = 500 * Math.cos(this.phi);
-    this.camera.target.z = 500 * Math.sin(this.phi) * Math.sin(this.theta);
-    this.camera.lookAt(this.camera.target);
+  /**
+   * Optionally call from main.js to sync pushes to server
+   * @param {function(string, THREE.Vector3)} cb 
+   */
+  setPushCallback(cb) {
+    this.onPush = cb;
   }
 }
 
