@@ -23,11 +23,11 @@ let clickZ = 0;
 let currentModelIndex = 0; // Start with the first model
 let modelLinks = [];
 
-// // Load texture
-// const textureLoader = new THREE.TextureLoader();
-// const customTexture = textureLoader.load(
-//   "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/TCom_StrandedBambooPlate_1K_albedo.png?v=1740983774496"
-// );
+// Load texture
+const textureLoader = new THREE.TextureLoader();
+const customTexture = textureLoader.load(
+  "https://cdn.glitch.global/d2f3e6de-4097-4e73-b207-af04bf5111cd/tangram%20pattern.png?v=1746391912707"
+);
 
 // puzzle colors
 const rainbowColors = [
@@ -72,17 +72,63 @@ function init() {
   scene.add(light);
 
   //floor plate
-  const geometry1 = new THREE.PlaneGeometry(4000, 4000);
-  const material1 = new THREE.MeshStandardMaterial({
-    color: "#404040",
+  customTexture.wrapS = THREE.RepeatWrapping;
+  customTexture.wrapT = THREE.RepeatWrapping;
+  customTexture.repeat.set(2, 2);
+  const planeGeometry = new THREE.PlaneGeometry(3400, 3400);
+  const planeMaterial = new THREE.MeshStandardMaterial({
+    map: customTexture,
     side: THREE.DoubleSide,
   });
-  const plane = new THREE.Mesh(geometry1, material1);
-  geometry1.rotateX(Math.PI / 2);
-  plane.position.set(0, 0, 1000);
-  plane.receiveShadow = true;
+  const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+  plane.rotation.x = -Math.PI / 2; // lay flat
   scene.add(plane);
   plane.name = "floor";
+
+// wall parameters
+const wallLength    = 3400;
+const wallHeight    = 400;
+const wallThickness =  50;
+const halfSize      = wallLength / 2;
+const halfThick     = wallThickness / 2;
+
+// shared material
+const wallMat = new THREE.MeshStandardMaterial({ color: "#7c7c7c" });
+
+// ─── North wall ───
+const northGeo = new THREE.BoxGeometry(wallLength, wallHeight, wallThickness);
+const northWall = new THREE.Mesh(northGeo, wallMat);
+northWall.position.set(
+  0,                   // x
+  wallHeight / 2,      // y (raise by half the height)
+  halfSize + halfThick // z just beyond the floor edge
+);
+northWall.receiveShadow = true;
+northWall.castShadow    = true;
+scene.add(northWall);
+
+// ─── South wall ───
+const southWall = northWall.clone();
+southWall.position.set(0, wallHeight / 2, -halfSize - halfThick);
+scene.add(southWall);
+
+// ─── East wall ───
+const eastGeo = new THREE.BoxGeometry(wallThickness, wallHeight, wallLength);
+const eastWall = new THREE.Mesh(eastGeo, wallMat);
+eastWall.position.set(
+  halfSize + halfThick,  // x just beyond the floor edge
+  wallHeight / 2,        // y
+  0                      // z
+);
+eastWall.receiveShadow = true;
+eastWall.castShadow    = true;
+scene.add(eastWall);
+
+// ─── West wall ───
+const westWall = eastWall.clone();
+westWall.position.set(-halfSize - halfThick, wallHeight / 2, 0);
+scene.add(westWall);
+
 
   // Add orbit controls
   let controls = new OrbitControls(camera, renderer.domElement);
@@ -119,25 +165,24 @@ function init() {
   });
 
   // --- new multiplayer piece handlers ---
-socket.on("initialize", (existingPieces) => {
-  pieces = existingPieces;
-  pieces.forEach(createOrUpdatePiece);
-});
+  socket.on("initialize", (existingPieces) => {
+    pieces = existingPieces;
+    pieces.forEach(createOrUpdatePiece);
+  });
 
-socket.on("newPiece", (newPiece) => {
-  if (!pieces.find((p) => p.id === newPiece.id)) {
-    pieces.push(newPiece);
-    createOrUpdatePiece(newPiece);
-  }
-});
+  socket.on("newPiece", (newPiece) => {
+    if (!pieces.find((p) => p.id === newPiece.id)) {
+      pieces.push(newPiece);
+      createOrUpdatePiece(newPiece);
+    }
+  });
 
-socket.on("pieceUpdated", (updated) => {
-  const idx = pieces.findIndex((p) => p.id === updated.id);
-  if (idx !== -1) {
-    pieces[idx] = updated;
-    createOrUpdatePiece(updated);
-  }
-
+  socket.on("pieceUpdated", (updated) => {
+    const idx = pieces.findIndex((p) => p.id === updated.id);
+    if (idx !== -1) {
+      pieces[idx] = updated;
+      createOrUpdatePiece(updated);
+    }
   });
 
   socket.on("limitReached", () => {
@@ -178,7 +223,7 @@ function createOrUpdatePiece(piece) {
     model.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
 
     // Colorize
-    model.traverse(c => {
+    model.traverse((c) => {
       if (c.isMesh) {
         c.material = new THREE.MeshStandardMaterial({ color: piece.color });
       }
@@ -195,7 +240,6 @@ function createOrUpdatePiece(piece) {
     scene.add(model);
   });
 }
-
 
 //initiate drag and rotate
 function onMouseDown(event) {
@@ -317,28 +361,28 @@ function instantiateNewPiece() {
   // raycast once at the current mouse.x/y
   raycaster.setFromCamera(mouse, camera);
   const floor = scene.getObjectByName("floor");
-  const hits  = raycaster.intersectObject(floor, true);
+  const hits = raycaster.intersectObject(floor, true);
   if (!hits.length) return;
   const hit = hits[0].point;
 
   // generate an id and capture the index you want
-  const id          = generateUniqueId();
+  const id = generateUniqueId();
   const chosenIndex = currentModelIndex;
 
   // build the action with your chosen modelIndex
   const action = {
-    type:  "add",
+    type: "add",
     piece: {
-      id:         id,
+      id: id,
       modelIndex: chosenIndex,
-      color:      rainbowColors[chosenIndex]
+      color: rainbowColors[chosenIndex],
     },
     data: {
       position: { x: hit.x, y: hit.y, z: hit.z },
-      rotation: { x: 0,     y: 0,     z: 0     }
+      rotation: { x: 0, y: 0, z: 0 },
     },
     userId: socket.id,
-    ts:     Date.now()
+    ts: Date.now(),
   };
 
   // emit *only* — don’t render locally!
@@ -347,7 +391,6 @@ function instantiateNewPiece() {
   // advance your local counter just for the *next* selection
   currentModelIndex = (chosenIndex + 1) % modelLinks.length;
 }
-
 
 function updateScene() {
   // Loop through all pieces to add or update them in the scene
