@@ -51,7 +51,7 @@ function init() {
     0.1,
     10000
   );
-  camera.position.set(0, 100, 200);
+  camera.position.set(100, 100, 200);
   camera.lookAt(0, 0, 0);
 
   //renderer
