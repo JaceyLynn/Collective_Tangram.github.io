@@ -1,49 +1,41 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
+// server.js
+require("dotenv").config(); // ← 1) Load your .env secret
+const express = require("express");
+const http = require("http");
+const socketIo = require("socket.io");
+const mongoose = require("mongoose");
 
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser:    true,
-    useUnifiedTopology: true
-  })
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
 
+// 2) Mongoose schemas & models
 const { Schema, model } = mongoose;
 
-// Persistent piece state
 const pieceSchema = new Schema({
-  _id:         String,   // use your piece.id as the document _id
-  modelIndex:  Number,
-  color:       String,
-  position:   { x:Number, y:Number, z:Number },
-  rotation:   { x:Number, y:Number, z:Number },
+  _id: String,
+  modelIndex: Number,
+  color: String,
+  position: { x: Number, y: Number, z: Number },
+  rotation: { x: Number, y: Number, z: Number },
   lastModifiedBy: String,
-  ts:          Date
+  ts: Date,
 });
+const Piece = model("Piece", pieceSchema);
 
-const Piece = model('Piece', pieceSchema);
-
-// Optional: log every add/move/rotate
 const actionSchema = new Schema({
   pieceId: String,
-  type:    String,
-  data:    Schema.Types.Mixed,
-  userId:  String,
-  ts:      Date
+  type: String,
+  data: Schema.Types.Mixed,
+  userId: String,
+  ts: Date,
 });
+const Action = model("Action", actionSchema);
 
-const Action = model('Action', actionSchema);
-
-const express   = require('express');
-const http      = require('http');
-const socketIo  = require('socket.io');
-
-const app    = express();
-const server = http.createServer(app);
-const io     = socketIo(server);
-
-// same colors your client uses
+// 3) App‐level state & config
+let pieces = []; // in‑memory copy
+let playerInstantiations = {};
+let currentModelIndex = 0;
 const rainbowColors = [
   "#D4A29C",
   "#E8B298",
@@ -53,75 +45,99 @@ const rainbowColors = [
   "#97ADF6",
   "#C6A0D4",
 ];
-// seed the seven template pieces
-let pieces = rainbowColors.map((color, idx) => ({
-  id:         `template-${idx}`,   // stable id
-  modelIndex: idx,                 // which glb to load
-  color,                           // client will recolor it
-  position:   { x: 0, y: 0, z: 0 }, // no shift: use baked‑in verts
-  rotation:   { x: 0, y: 0, z: 0 }
-}));
-let playerInstantiations = {};
-let currentModelIndex    = 0;
 
-// serve your client app
-app.use(express.static('public'));
+// 4) Connect to MongoDB
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-io.on('connection', socket => {
-  console.log('User connected:', socket.id);
-  playerInstantiations[socket.id] = 0;
-  // send everyone’s current board
-  socket.emit('initialize', pieces);
+// 5) Once DB is ready, load (and seed if empty), then start the server
+mongoose.connection.once("open", async () => {
+  // load existing pieces
+  pieces = await Piece.find().lean();
 
-  socket.on('pieceAction', ({ type, piece, data }) => {
-    // ─────────── ADD ───────────
-    if (type === 'add') {
-      // limit to 7 per player
-      if (playerInstantiations[socket.id] >= 7) {
-        return socket.emit('limitReached');
-      }
+  // seed templates if DB was empty
+  if (pieces.length === 0) {
+    const templates = rainbowColors.map((color, idx) => ({
+      _id: `template-${idx}`,
+      modelIndex: idx,
+      color,
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      lastModifiedBy: "system",
+      ts: new Date(),
+    }));
+    await Piece.insertMany(templates);
+    pieces = templates;
+  }
 
-      // build the authoritative piece
-      const newPiece = {
-        id:         piece.id,
-        modelIndex: currentModelIndex,    // 0–6 cycling
-        color:      piece.color,
-        position:   data.position,
-        rotation:   data.rotation
-      };
+  // 6) Serve your static client files
+  app.use(express.static("public"));
 
-      // save it
-      pieces.push(newPiece);
-      playerInstantiations[socket.id]++;
+  // 7) Socket.io logic
+  io.on("connection", (socket) => {
+    console.log("User connected:", socket.id);
+    playerInstantiations[socket.id] = 0;
 
-      // cycle 0–6
-      currentModelIndex = (currentModelIndex + 1) % 7;
+    // send the full board
+    socket.emit("initialize", pieces);
 
-      // broadcast it back as "newPiece"
-      io.emit('newPiece', newPiece);
-    }
+    socket.on("pieceAction", async ({ type, piece, data, userId, ts }) => {
+      if (type === "add") {
+        if (playerInstantiations[socket.id] >= 7) {
+          return socket.emit("limitReached");
+        }
+        const newPiece = {
+          id: piece.id,
+          modelIndex: currentModelIndex,
+          color: piece.color,
+          position: data.position,
+          rotation: data.rotation,
+          lastModifiedBy: userId,
+          ts,
+        };
+        pieces.push(newPiece);
+        playerInstantiations[socket.id]++;
+        currentModelIndex = (currentModelIndex + 1) % rainbowColors.length;
+        io.emit("newPiece", newPiece);
 
-    // ───────── MOVE / ROTATE ─────────
-    else if (type === 'move' || type === 'rotate') {
-      const idx = pieces.findIndex(p => p.id === piece.id);
-      if (idx !== -1) {
-        // merge in just the fields you sent
+        // persist & log
+        await Piece.findByIdAndUpdate(
+          newPiece.id,
+          { $set: newPiece },
+          { upsert: true }
+        );
+        await Action.create({ pieceId: newPiece.id, type, data, userId, ts });
+      } else if (type === "move" || type === "rotate") {
+        const idx = pieces.findIndex((p) => p.id === piece.id);
+        if (idx === -1) return;
         pieces[idx] = {
           ...pieces[idx],
-          ...data
+          ...data,
+          lastModifiedBy: userId,
+          ts,
         };
-        io.emit('pieceUpdated', pieces[idx]);
+        io.emit("pieceUpdated", pieces[idx]);
+        await Piece.findByIdAndUpdate(
+          piece.id,
+          { $set: { ...data, lastModifiedBy: userId, ts } },
+          { upsert: true }
+        );
+        await Action.create({ pieceId: piece.id, type, data, userId, ts });
       }
-    }
+    });
+
+    socket.on("disconnect", () => {
+      console.log("User disconnected:", socket.id);
+      delete playerInstantiations[socket.id];
+    });
   });
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-    delete playerInstantiations[socket.id];
-  });
+  // 8) And finally, start listening
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, () => console.log(`Listening on ${PORT}`));
 });
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Listening on ${PORT}`));
-
-
