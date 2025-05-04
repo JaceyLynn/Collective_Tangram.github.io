@@ -70,6 +70,9 @@ function init() {
   light.shadow.camera.near = 0.5;
   light.shadow.camera.far = 5000;
   scene.add(light);
+  
+  
+  
   //floor plate
   const geometry1 = new THREE.PlaneGeometry(4000, 4000);
   const material1 = new THREE.MeshStandardMaterial({
@@ -123,6 +126,12 @@ function init() {
   socket = io({
     transports: ["websocket"], // <-- no polling, only ws
   });
+  
+  // once, at init time:
+window.addEventListener("mousemove", e => {
+  mouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+});
 
   socket.on("connect", () => {
     console.log("Connected over WebSocket, socket id:", socket.id);
@@ -139,6 +148,7 @@ function init() {
       pieces.push(newPiece);
       createOrUpdatePiece(newPiece);
     }
+ socket.on("pieceUpdated", createOrUpdatePiece);
   });
 
   socket.on("pieceUpdated", (updated) => {
@@ -327,45 +337,42 @@ let rotationAngle = 0; // Track current rotation angle
 let rotationInProgress = false; // Prevent continuous rotation while shift is held
 
 function instantiateNewPiece() {
-  // 0. make sure mouse coords are fresh
+  // 1) Raycast at the last mouse.x/y
   raycaster.setFromCamera(mouse, camera);
-
-  // 1. find where on the floor you clicked
-  const floor = scene.getObjectByName("floor");
-  const hits = raycaster.intersectObject(floor, true);
+  const hits = raycaster.intersectObject(scene.getObjectByName("floor"), true);
   if (!hits.length) return;
   const hit = hits[0].point;
 
-  // 2. build the pieceData you’ll both render locally and send
+  // 2) Build your pieceData
   const pieceData = {
-    id: generateUniqueId(),
+    id:         generateUniqueId(),
     modelIndex: currentModelIndex,
-    color: rainbowColors[currentModelIndex],
-    position: { x: hit.x, y: hit.y, z: hit.z },
-    rotation: { x: 0, y: 0, z: 0 },
+    color:      rainbowColors[currentModelIndex],
+    position:   { x: hit.x, y: hit.y, z: hit.z },
+    rotation:   { x: 0,     y: 0,     z: 0     }
   };
-    createOrUpdatePiece(pieceData);      // ← immediate local add
-  socket.emit("pieceAction", action);  // ← for everyone else
-  currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
 
-  // 3. emit a unified “pieceAction” add event
+  // 3) Show it immediately yourself
+  createOrUpdatePiece(pieceData);
+
+  // 4) Build and emit the action just once
   const action = {
-    type: "add",
-    piece: {
-      id: pieceData.id,
+    type:   "add",
+    piece:  {
+      id:         pieceData.id,
       modelIndex: pieceData.modelIndex,
-      color: pieceData.color,
+      color:      pieceData.color
     },
-    data: {
+    data:   {
       position: pieceData.position,
-      rotation: pieceData.rotation,
+      rotation: pieceData.rotation
     },
     userId: socket.id,
-    ts: Date.now(),
+    ts:     Date.now()
   };
   socket.emit("pieceAction", action);
 
-  // 4. advance your color/model index for next time
+  // 5) Then advance your index exactly once
   currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
 }
 

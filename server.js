@@ -1,84 +1,73 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
+const express   = require('express');
+const http      = require('http');
+const socketIo  = require('socket.io');
 
-// Create an express app and HTTP server
-const app = express();
+const app    = express();
 const server = http.createServer(app);
+const io     = socketIo(server);
 
-// Initialize Socket.io with the HTTP server
-const io = socketIo(server);
+let pieces               = [];
+let playerInstantiations = {};
+let currentModelIndex    = 0;
 
-// Store the state of pieces and player instantiation counts
-let pieces = [];
-let playerInstantiations = {};  // Track pieces instantiated by each player
-let currentModelIndex = 0; // To cycle through models
-
-// Serve static files (e.g., HTML, CSS, JS)
+// serve your client app
 app.use(express.static('public'));
 
-// Listen for new WebSocket connections
-io.on('connection', (socket) => {
-  console.log('A new user connected:', socket.id);
-
-  // Initialize the player's instantiation count to 0
+io.on('connection', socket => {
+  console.log('User connected:', socket.id);
   playerInstantiations[socket.id] = 0;
-
-  // Send the current state of pieces to the new player
+  // send everyone’s current board
   socket.emit('initialize', pieces);
 
-  // Handle a player instantiating a new piece
-  socket.on('instantiatePiece', (pieceData) => {
-    if (playerInstantiations[socket.id] < 7) {
-      // Assign the current model index to the piece
-      pieceData.modelIndex = currentModelIndex;
+  socket.on('pieceAction', ({ type, piece, data }) => {
+    // ─────────── ADD ───────────
+    if (type === 'add') {
+      // limit to 7 per player
+      if (playerInstantiations[socket.id] >= 7) {
+        return socket.emit('limitReached');
+      }
 
-      // Player can instantiate a new piece
-      pieces.push(pieceData);
+      // build the authoritative piece
+      const newPiece = {
+        id:         piece.id,
+        modelIndex: currentModelIndex,    // 0–6 cycling
+        color:      piece.color,
+        position:   data.position,
+        rotation:   data.rotation
+      };
+
+      // save it
+      pieces.push(newPiece);
       playerInstantiations[socket.id]++;
 
-      // Increment and cycle the model index
+      // cycle 0–6
       currentModelIndex = (currentModelIndex + 1) % 7;
 
-      // Broadcast the new piece to all players
-      io.emit('newPiece', pieceData);
-    } else {
-      // Player has hit the limit for instantiating pieces
-      socket.emit('limitReached');
+      // broadcast it back as "newPiece"
+      io.emit('newPiece', newPiece);
+    }
+
+    // ───────── MOVE / ROTATE ─────────
+    else if (type === 'move' || type === 'rotate') {
+      const idx = pieces.findIndex(p => p.id === piece.id);
+      if (idx !== -1) {
+        // merge in just the fields you sent
+        pieces[idx] = {
+          ...pieces[idx],
+          ...data
+        };
+        io.emit('pieceUpdated', pieces[idx]);
+      }
     }
   });
 
-  
-  socket.on('newPiece', (newPiece) => {
-  // Make sure you don’t double‐add:
-  if (pieces.find(p => p.id === newPiece.id)) return;
-
-  pieces.push(newPiece);
-  createOrUpdatePiece(newPiece);
-});
-  
-  // Handle movement or rotation of pieces
-  socket.on('updatePiece', (updatedPieceData) => {
-    // Update the piece's state in the server
-    const index = pieces.findIndex(piece => piece.id === updatedPieceData.id);
-    if (index !== -1) {
-      pieces[index] = updatedPieceData;
-
-      // Broadcast the updated piece to all players
-      io.emit('pieceUpdated', updatedPieceData);
-    }
-  });
-
-  // Handle player disconnect
   socket.on('disconnect', () => {
-    console.log('A user disconnected:', socket.id);
-    delete playerInstantiations[socket.id];  // Remove the player from instantiation tracking
+    console.log('User disconnected:', socket.id);
+    delete playerInstantiations[socket.id];
   });
 });
 
-// Start the server on the specified port (Glitch dynamic port handling)
-const port = process.env.PORT || 3000;
-server.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Listening on ${PORT}`));
+
 
