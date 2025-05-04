@@ -25,6 +25,9 @@ let clickZ = 0;
 let currentModelIndex = 0; // Start with the first model
 let modelLinks = [];
 
+let frameCounts = 0;
+let controls;
+
 // Load PLANE texture
 const textureLoader = new THREE.TextureLoader();
 const customTexture = textureLoader.load(
@@ -53,14 +56,16 @@ function init() {
     0.1,
     10000
   );
-  camera.position.set(100, 100, 200);
+  camera.position.set(10, 10, 10);
   camera.lookAt(0, 0, 0);
 
+  
   //renderer
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
   
+  controls = new FirstPersonControls(scene, camera, renderer);
   
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
 // color: white, intensity: 0.4 (tweak up/down as needed)
@@ -142,7 +147,7 @@ scene.add(westWall);
 
   // // Add orbit controls
   // let controls = new OrbitControls(camera, renderer.domElement);
-let controls = new FirstPersonControls(scene, camera, renderer);
+
   // Load models
   modelLinks = [
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_1.glb?v=1740980622181", // Model 2 (Red)
@@ -579,7 +584,7 @@ function animate() {
       tempPosition.add(center);
     }
   }
-
+  frameCounts++;
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }

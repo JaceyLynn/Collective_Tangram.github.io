@@ -30,7 +30,7 @@ export class FirstPersonControls {
 
   // Set up pointer lock controls and corresponding event listeners
   setupControls() {
-    // let jumpSpeed = 12;
+    // 
 
     this.moveForward = false;
     this.moveBackward = false;
@@ -411,3 +411,5 @@ export class FirstPersonControls {
     this.camera.lookAt(this.camera.target);
   }
 }
+
+
