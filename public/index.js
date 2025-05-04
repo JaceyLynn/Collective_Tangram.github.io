@@ -26,7 +26,7 @@ let modelLinks = [];
 // Load texture
 const textureLoader = new THREE.TextureLoader();
 const customTexture = textureLoader.load(
-  "https://cdn.glitch.global/d2f3e6de-4097-4e73-b207-af04bf5111cd/tangram%20pattern.png?v=1746391912707"
+  "https://cdn.glitch.global/d2f3e6de-4097-4e73-b207-af04bf5111cd/tangram%20pattern%20wood.png?v=1746393376674"
 );
 
 // puzzle colors
@@ -51,7 +51,7 @@ function init() {
     0.1,
     10000
   );
-  camera.position.set(0, 500, 100);
+  camera.position.set(0, 100, 200);
   camera.lookAt(0, 0, 0);
 
   //renderer
