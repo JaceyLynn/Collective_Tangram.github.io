@@ -56,7 +56,7 @@ function init() {
     0.1,
     10000
   );
-  camera.position.set(10, 10, 10);
+  camera.position.set(10, 200, 200);
   camera.lookAt(0, 0, 0);
 
   
@@ -65,8 +65,26 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
   
-  controls = new FirstPersonControls(scene, camera, renderer);
-  
+  // 1) Create controls, passing in your piece‐spawn & rotate callbacks
+const controls = new FirstPersonControls(
+  scene,
+  camera,
+  renderer,
+  () => instantiateNewPiece(),     // Space → create
+  () => rotatePieceBy45()   // R → rotate nearest
+);
+
+// 2) Pushes from collisions should be sent to server
+controls.setPushCallback((id, pos) => {
+  socket.emit("pieceAction", {
+    type: "move",
+    piece:{ id },
+    data: { position: { x: pos.x, y: pos.y, z: pos.z } },
+    userId: socket.id,
+    ts:    Date.now()
+  });
+});
+  controls.prevTime = performance.now();
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
 // color: white, intensity: 0.4 (tweak up/down as needed)
 scene.add(ambientLight);
@@ -586,6 +604,10 @@ function animate() {
   }
   frameCounts++;
   renderer.render(scene, camera);
+    const now   = performance.now();
+  const delta = (now - controls.prevTime) / 1000;  // seconds
+  controls.update(delta);
+  controls.prevTime = now;
   requestAnimationFrame(animate);
 }
 

@@ -164,7 +164,7 @@ export class FirstPersonControls {
   // update for these controls, which are unfortunately not included in the controls directly...
   // see: https://github.com/mrdoob/three.js/issues/5566
   updateControls() {
-    let speed = 100;
+    let speed = 1000;
 
     var time = performance.now();
     var rawDelta = (time - this.prevTime) / 1000;
@@ -223,13 +223,13 @@ export class FirstPersonControls {
     // Here we talkin bout gravity...
     // this.velocity.y -= 9.8 * 8.0 * delta; // 100.0 = mass
 
-    // For double-jumping!
-    if (this.camera.position.y > 1.7 && this.gravity) {
-      // less gravity like when we begin
-      this.gravity = 2.0;
-    } else if (this.camera.position.y <= 1.7 && this.gravity) {
-      this.gravity = 8.0; // original value
-    }
+    // // For double-jumping!
+    // if (this.camera.position.y > 1.7 && this.gravity) {
+    //   // less gravity like when we begin
+    //   this.gravity = 2.0;
+    // } else if (this.camera.position.y <= 1.7 && this.gravity) {
+    //   this.gravity = 8.0; // original value
+    // }
 
     if (this.gravity) {
       // Add gravity
