@@ -1,6 +1,8 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+// import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { FirstPersonControls } from "/FirstPersonControls.js";
+
 let socket;
 // Generate a unique ID for each new piece
 function generateUniqueId() {
@@ -55,11 +57,8 @@ function init() {
   camera.lookAt(0, 0, 0);
 
   //renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
   document.body.appendChild(renderer.domElement);
   
   
@@ -141,9 +140,9 @@ scene.add(westWall);
 
 
 
-  // Add orbit controls
-  let controls = new OrbitControls(camera, renderer.domElement);
-
+  // // Add orbit controls
+  // let controls = new OrbitControls(camera, renderer.domElement);
+let controls = new FirstPersonControls(scene, camera, renderer);
   // Load models
   modelLinks = [
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_1.glb?v=1740980622181", // Model 2 (Red)
