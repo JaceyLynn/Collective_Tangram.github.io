@@ -102,23 +102,6 @@ function init() {
   //setup model
   const loader = new GLTFLoader();
 
-  modelLinks.forEach((link, index) => {
-    loader.load(link, (gltf) => {
-      let model = gltf.scene;
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-          child.material = new THREE.MeshStandardMaterial({
-            color: rainbowColors[index],
-          });
-        }
-      });
-
-      scene.add(model);
-      myModels.set(model, index === -1 ? "static" : "draggable");
-    });
-  });
   //setup mouse interaction
   document.addEventListener("mousedown", onMouseDown);
   document.addEventListener("mousemove", onMouseMove);
@@ -138,10 +121,10 @@ window.addEventListener("mousemove", e => {
   });
 
   // --- new multiplayer piece handlers ---
-  socket.on("initialize", (existingPieces) => {
-    pieces = existingPieces;
-    pieces.forEach((p) => createOrUpdatePiece(p));
-  });
+socket.on("initialize", existingPieces => {
+  pieces = existingPieces;
+  existingPieces.forEach(p => createOrUpdatePiece(p));
+});
 
   socket.on("newPiece", (newPiece) => {
     if (!pieces.find((p) => p.id === newPiece.id)) {

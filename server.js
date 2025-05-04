@@ -6,7 +6,24 @@ const app    = express();
 const server = http.createServer(app);
 const io     = socketIo(server);
 
-let pieces               = [];
+// same colors your client uses
+const rainbowColors = [
+  "#D4A29C",
+  "#E8B298",
+  "#FDE8B3",
+  "#BDE1B3",
+  "#B0E1E3",
+  "#97ADF6",
+  "#C6A0D4",
+];
+// seed the seven template pieces
+let pieces = rainbowColors.map((color, idx) => ({
+  id:         `template-${idx}`,   // stable id
+  modelIndex: idx,                 // which glb to load
+  color,                           // client will recolor it
+  position:   { x: 0, y: 0, z: 0 }, // no shift: use baked‑in verts
+  rotation:   { x: 0, y: 0, z: 0 }
+}));
 let playerInstantiations = {};
 let currentModelIndex    = 0;
 
