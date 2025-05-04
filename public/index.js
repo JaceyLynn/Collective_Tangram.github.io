@@ -119,25 +119,25 @@ function init() {
   });
 
   // --- new multiplayer piece handlers ---
-  socket.on("initialize", (existingPieces) => {
-    pieces = existingPieces;
-    existingPieces.forEach((p) => createOrUpdatePiece(p));
-  });
+socket.on("initialize", (existingPieces) => {
+  pieces = existingPieces;
+  pieces.forEach(createOrUpdatePiece);
+});
 
-  socket.on("newPiece", (newPiece) => {
-    if (!pieces.find((p) => p.id === newPiece.id)) {
-      pieces.push(newPiece);
-      createOrUpdatePiece(newPiece);
-    }
-    socket.on("pieceUpdated", createOrUpdatePiece);
-  });
+socket.on("newPiece", (newPiece) => {
+  if (!pieces.find((p) => p.id === newPiece.id)) {
+    pieces.push(newPiece);
+    createOrUpdatePiece(newPiece);
+  }
+});
 
-  socket.on("pieceUpdated", (updated) => {
-    const idx = pieces.findIndex((p) => p.id === updated.id);
-    if (idx !== -1) {
-      pieces[idx] = updated;
-      createOrUpdatePiece(updated);
-    }
+socket.on("pieceUpdated", (updated) => {
+  const idx = pieces.findIndex((p) => p.id === updated.id);
+  if (idx !== -1) {
+    pieces[idx] = updated;
+    createOrUpdatePiece(updated);
+  }
+
   });
 
   socket.on("limitReached", () => {

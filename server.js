@@ -58,7 +58,31 @@ mongoose
 // 5) Once DB is ready, load (and seed if empty), then start the server
 mongoose.connection.once("open", async () => {
   // load existing pieces
-  pieces = await Piece.find().lean();
+  let docs = await Piece.find().lean();
+  if (docs.length === 0) {
+    const templates = rainbowColors.map((color, idx) => ({
+      _id: `template-${idx}`, // Mongo’s key
+      modelIndex: idx,
+      color,
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      static: true, // ← mark as non‑draggable
+      lastModifiedBy: "system",
+      ts: new Date(),
+    }));
+    await Piece.insertMany(templates);
+    docs = templates;
+  }
+
+  // Map Mongo’s _id → id and carry over static
+  pieces = docs.map((doc) => ({
+    id: doc._id,
+    modelIndex: doc.modelIndex,
+    color: doc.color,
+    position: doc.position,
+    rotation: doc.rotation,
+    static: Boolean(doc.static),
+  }));
 
   // seed templates if DB was empty
   if (pieces.length === 0) {
@@ -85,11 +109,23 @@ mongoose.connection.once("open", async () => {
     console.log("User connected:", socket.id);
     playerInstantiations[socket.id] = 0;
 
-    // send the full board
+    // 1. Send the full board (templates + any added pieces)
     socket.emit("initialize", pieces);
 
     socket.on("pieceAction", async ({ type, piece, data, userId, ts }) => {
+      // ─────────── ADD ───────────
       if (type === "add") {
+        // limit per player
+        if (playerInstantiations[socket.id] >= 7) {
+          return socket.emit("limitReached");
+        }
+
+        // prevent double‐adds
+        if (pieces.find((p) => p.id === piece.id)) {
+          return;
+        }
+
+        // build the new dynamic piece
         const newPiece = {
           id: piece.id,
           modelIndex: currentModelIndex,
@@ -98,11 +134,15 @@ mongoose.connection.once("open", async () => {
           rotation: data.rotation,
           lastModifiedBy: userId,
           ts,
-          static: false, // ← and here!
+          static: false,
         };
+
+        // update in‑memory state
         pieces.push(newPiece);
         playerInstantiations[socket.id]++;
         currentModelIndex = (currentModelIndex + 1) % rainbowColors.length;
+
+        // broadcast to everyone
         io.emit("newPiece", newPiece);
 
         // persist & log
@@ -112,16 +152,21 @@ mongoose.connection.once("open", async () => {
           { upsert: true }
         );
         await Action.create({ pieceId: newPiece.id, type, data, userId, ts });
-      } else if (type === "move" || type === "rotate") {
+      }
+
+      // ───────── MOVE / ROTATE ─────────
+      else if (type === "move" || type === "rotate") {
         const idx = pieces.findIndex((p) => p.id === piece.id);
         if (idx === -1) return;
-        pieces[idx] = {
-          ...pieces[idx],
-          ...data,
+
+        // merge into in‑memory and broadcast
+        Object.assign(pieces[idx], data, {
           lastModifiedBy: userId,
           ts,
-        };
+        });
         io.emit("pieceUpdated", pieces[idx]);
+
+        // persist & log
         await Piece.findByIdAndUpdate(
           piece.id,
           { $set: { ...data, lastModifiedBy: userId, ts } },
