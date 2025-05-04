@@ -121,12 +121,12 @@ function init() {
   document.addEventListener("mousemove", onMouseMove);
   document.addEventListener("mouseup", onMouseUp);
   socket = io({
-  transports: ["websocket"]  // <-- no polling, only ws
-});
+    transports: ["websocket"], // <-- no polling, only ws
+  });
 
-socket.on("connect", () => {
-  console.log("Connected over WebSocket, socket id:", socket.id);
-});
+  socket.on("connect", () => {
+    console.log("Connected over WebSocket, socket id:", socket.id);
+  });
 
   // --- new multiplayer piece handlers ---
   socket.on("initialize", (existingPieces) => {
@@ -203,6 +203,8 @@ function createOrUpdatePiece(piece) {
 
       // Add the new piece to the scene
       scene.add(model);
+      // ← make it draggable!
+      myModels.set(model, "draggable");
     });
   }
 }
@@ -214,6 +216,9 @@ function updatePiece(pieceData) {
 
 //initiate drag and rotate
 function onMouseDown(event) {
+  // update normalized device coords from this event
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(scene.children, true);
 
@@ -289,6 +294,21 @@ function onMouseMove(event) {
       );
 
       console.log("Updated position:", pickedObject.position);
+
+      // tell server / peers about it
+      updatePiece({
+        id: pickedObject.name,
+        position: {
+          x: pickedObject.position.x,
+          y: pickedObject.position.y,
+          z: pickedObject.position.z,
+        },
+        rotation: {
+          x: pickedObject.rotation.x,
+          y: pickedObject.rotation.y,
+          z: pickedObject.rotation.z,
+        },
+      });
       createTrail(pickedObject.position, pickedObject);
     }
   }
@@ -409,6 +429,21 @@ function rotateObjectBy45Degrees() {
   // Apply the rotation around the object's center (local rotation)
   let angleInRadians = THREE.MathUtils.degToRad(rotationAngle); // Convert to radians
   pickedObject.rotation.y = angleInRadians; // Rotate around the Y-axis (horizontal)
+
+  // let server / peers know
+  updatePiece({
+    id: pickedObject.name,
+    position: {
+      x: pickedObject.position.x,
+      y: pickedObject.position.y,
+      z: pickedObject.position.z,
+    },
+    rotation: {
+      x: pickedObject.rotation.x,
+      y: pickedObject.rotation.y,
+      z: pickedObject.rotation.z,
+    },
+  });
 
   // Allow the rotation to complete before another key press
   setTimeout(() => {
