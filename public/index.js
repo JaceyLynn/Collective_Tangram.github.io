@@ -31,7 +31,6 @@ let controls;
 let floatingBoxes = [];
 
 // At the top of your file
-let savedCamPosition = null;
 let savedCamLat = null;
 let savedCamLon = null;
 
@@ -118,20 +117,20 @@ function init() {
     return light;
   }
 
-  const d = 2000;   // distance from center
-  const h = 500;   // height above ground
+  const d = 2000; // distance from center
+  const h = 500; // height above ground
 
   // Cyan light from +X (East)
-  makeDirLight(0x00ffff,  d, h,  0, 2);
+  makeDirLight(0x00ffff, d, h, 0, 2);
 
   // Magenta light from -X (West)
-  makeDirLight(0xff00ff, -d, h,  0, 1.0);
+  makeDirLight(0xff00ff, -d, h, 0, 1.0);
 
   // Yellow light from +Z (South)
-  makeDirLight(0xffff00,  0, h,  d, 2);
+  makeDirLight(0xffff00, 0, h, d, 2);
 
   // Green light from -Z (North)
-  makeDirLight(0x00ff00,  0, h, -d, 1.5);
+  makeDirLight(0x00ff00, 0, h, -d, 1.5);
 
   // --- Floor ---
   customTexture.wrapS = THREE.RepeatWrapping;
@@ -183,55 +182,53 @@ function init() {
     scene.add(wall);
   });
   // ─── Floating torus‑knots ──────────────────────────────────────────────────
-// clear any old
-floatingBoxes = [];
+  // clear any old
+  floatingBoxes = [];
 
-// floor dimensions (must match your PlaneGeometry)
-const floorSize  = 3500;
+  // floor dimensions (must match your PlaneGeometry)
+  const floorSize = 3500;
 
-const knotCount = 100;
-for (let i = 0; i < knotCount; i++) {
-  // random p & q
-  const p = THREE.MathUtils.randInt(2, 10);
-  const q = THREE.MathUtils.randInt(2, 10);
+  const knotCount = 100;
+  for (let i = 0; i < knotCount; i++) {
+    // random p & q
+    const p = THREE.MathUtils.randInt(2, 10);
+    const q = THREE.MathUtils.randInt(2, 10);
 
-  // random size
-  const radius    = THREE.MathUtils.randFloat(20, 200);
-  const tube      = radius * 0.3;
-  const geometry  = new THREE.TorusKnotGeometry(
-    radius, tube, 100, 16, p, q
-  );
-  const material  = new THREE.MeshStandardMaterial({ color: 0xffffff });
-  const knot      = new THREE.Mesh(geometry, material);
+    // random size
+    const radius = THREE.MathUtils.randFloat(20, 200);
+    const tube = radius * 0.3;
+    const geometry = new THREE.TorusKnotGeometry(radius, tube, 100, 16, p, q);
+    const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const knot = new THREE.Mesh(geometry, material);
 
-  // place outside the walls
-  const spawnRadius = 3000 + 200 + Math.random() * 800;
-  const angle       = Math.random() * Math.PI * 2;
-  knot.position.set(
-    Math.cos(angle) * spawnRadius,
-    THREE.MathUtils.randFloat(300, 4000), // some height
-    Math.sin(angle) * spawnRadius
-  );
+    // place outside the walls
+    const spawnRadius = 3000 + 200 + Math.random() * 800;
+    const angle = Math.random() * Math.PI * 2;
+    knot.position.set(
+      Math.cos(angle) * spawnRadius,
+      THREE.MathUtils.randFloat(300, 4000), // some height
+      Math.sin(angle) * spawnRadius
+    );
 
-  // for bobbing
-  knot.userData.baseY = knot.position.y;
-  knot.userData.phase = Math.random() * Math.PI * 2;
-  // 1) Random initial rotation:
-  knot.rotation.set(
-    Math.random() * Math.PI * 2,
-    Math.random() * Math.PI * 2,
-    Math.random() * Math.PI * 2
-  );
+    // for bobbing
+    knot.userData.baseY = knot.position.y;
+    knot.userData.phase = Math.random() * Math.PI * 2;
+    // 1) Random initial rotation:
+    knot.rotation.set(
+      Math.random() * Math.PI * 2,
+      Math.random() * Math.PI * 2,
+      Math.random() * Math.PI * 2
+    );
 
-  // 2) Assign a tiny random rotation speed (radians per second):
-  knot.userData.rotVelocity = new THREE.Vector3(
-    THREE.MathUtils.randFloat(-0.5, 0.5),
-    THREE.MathUtils.randFloat(-0.5, 0.5),
-    THREE.MathUtils.randFloat(-0.5, 0.5)
-  );
-  floatingBoxes.push(knot);
-  scene.add(knot);
-}
+    // 2) Assign a tiny random rotation speed (radians per second):
+    knot.userData.rotVelocity = new THREE.Vector3(
+      THREE.MathUtils.randFloat(-0.5, 0.5),
+      THREE.MathUtils.randFloat(-0.5, 0.5),
+      THREE.MathUtils.randFloat(-0.5, 0.5)
+    );
+    floatingBoxes.push(knot);
+    scene.add(knot);
+  }
 
   // 1) Query the AIC API for exactly as many images as boxes
   getArt("Color blocking", floatingBoxes.length)
@@ -296,17 +293,46 @@ for (let i = 0; i < knotCount; i++) {
   });
 
   // ─── “Bird’s‑eye” V‑key handlers ────────────────────────────────────────
+  // Bird’s‑eye handlers:
   window.addEventListener("keydown", (e) => {
     if (e.code === "KeyV" && savedCamPosition === null) {
+      // 1) save the old camera position & look state
       savedCamPosition = camera.position.clone();
-      camera.position.set(0, 1500, 0);
-      camera.lookAt(0, 0, 0);
+      savedCamLat = controls.lat;
+      savedCamLon = controls.lon;
+
+      // 2) move the camera up
+      camera.position.set(0, 3000, 0);
+
+      // 3) point straight down
+      controls.lat = -90; // pitch straight down
+      controls.lon = 0; // yaw doesn't matter
+      controls.euler.set(
+        THREE.MathUtils.degToRad(controls.lat),
+        THREE.MathUtils.degToRad(controls.lon),
+        0
+      );
+      camera.quaternion.setFromEuler(controls.euler);
     }
   });
+
   window.addEventListener("keyup", (e) => {
     if (e.code === "KeyV" && savedCamPosition !== null) {
+      // restore old position
       camera.position.copy(savedCamPosition);
-      savedCamPosition = null;
+
+      // restore old orientation
+      controls.lat = savedCamLat;
+      controls.lon = savedCamLon;
+      controls.euler.set(
+        THREE.MathUtils.degToRad(controls.lat),
+        THREE.MathUtils.degToRad(controls.lon),
+        0
+      );
+      camera.quaternion.setFromEuler(controls.euler);
+
+      // clear the saved state
+      savedCamPosition = savedCamLat = savedCamLon = null;
     }
   });
 
@@ -586,14 +612,14 @@ function animate() {
   // 1) update controls / movement
   const now = performance.now();
   controls.update(now);
-const delta = (now - controls.prevTime) / 1000;
+  const delta = (now - controls.prevTime) / 1000;
   // ─── Float the knot up & down ─────────────────────────────────────────────
 
   // float them up/down
   const t = now * 0.002;
   floatingBoxes.forEach((knot) => {
-    knot.position.y = knot.userData.baseY
-      + Math.sin(t + knot.userData.phase) * 20;
+    knot.position.y =
+      knot.userData.baseY + Math.sin(t + knot.userData.phase) * 20;
 
     // 3) apply their per‑knot spin:
     const rv = knot.userData.rotVelocity;
