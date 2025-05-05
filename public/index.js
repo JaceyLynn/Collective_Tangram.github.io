@@ -37,18 +37,18 @@ const customTexture = textureLoader.load(
 let bghue;
 // puzzle colors
 const rainbowColors = [
-  "#D4A29C",
-  "#E8B298",
-  "#FDE8B3",
-  "#BDE1B3",
-  "#B0E1E3",
-  "#97ADF6",
-  "#C6A0D4",
-  "#FF6F61",  // coral
-  "#6B5B95",  // deep purple
-  "#88B04B",  // green
-  "#F7CAC9",  // pink
-  "#92A8D1",  // light blue
+  "#CD2E55",
+  "#E9473A",
+  "#F4971B",
+  "#FCC010",
+  "#BDC04E",
+  "#13955F",
+  "#088EA7",
+  "#1EB8D1",  
+  "#438ECC",  
+  "#4153A1",  
+  "#F6BCD0",  
+  "#DEDCDD",  
 ];
 let modelIndex = 0;
 let colorIndex = 0;
