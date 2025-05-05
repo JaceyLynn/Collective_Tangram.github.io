@@ -24,7 +24,7 @@ let clickY = 0;
 let clickZ = 0;
 let currentModelIndex = 0; // Start with the first model
 let modelLinks = [];
-
+let savedCamPosition = null;
 let frameCounts = 0;
 let controls;
 
@@ -52,7 +52,7 @@ function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color("#404040");
   camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 10000);
-  camera.position.set(10, 10, 200);
+  camera.position.set(10, 20, 200);
 camera.lookAt(0, 0, 0);
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(innerWidth, innerHeight);
@@ -189,6 +189,7 @@ scene.add(westWall);
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
   });
+  
 
   socket.on("connect", () => {
     console.log("Connected over WebSocket, socket id:", socket.id);
@@ -218,9 +219,25 @@ scene.add(westWall);
   socket.on("limitReached", () => {
     alert("You've reached your 7-piece limit!");
   });
+// listen for V down
+window.addEventListener("keydown", (e) => {
+  if (e.code === "KeyV" && savedCamPosition === null) {
+    // save & lift
+    savedCamPosition = camera.position.clone();
+    camera.position.set(0, 1000, 0);
+  }
+});
 
+// listen for V up
+window.addEventListener("keyup", (e) => {
+  if (e.code === "KeyV" && savedCamPosition !== null) {
+    // restore
+    camera.position.copy(savedCamPosition);
+    savedCamPosition = null;
+  }
   animate();
 }
+
 
 // Function to create or update pieces in the scene
 function createOrUpdatePiece(piece) {

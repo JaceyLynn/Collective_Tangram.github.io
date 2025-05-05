@@ -161,7 +161,7 @@ _handleCollisions(oldPos) {
   }
 
   // 2) Push dynamic pieces (root groups) via sphere‐box test
-  const pushRadius = 15;              // how far your “hand” reaches
+  const pushRadius = 10;              // how far your “hand” reaches
   const forward   = this._getForwardDir();
 
   this.scene.children.forEach((obj) => {
@@ -172,7 +172,7 @@ _handleCollisions(oldPos) {
       const dist    = closest.distanceTo(this.camera.position);
 
       if (dist < pushRadius) {
-        const pushAmt = pushRadius - dist;
+        const pushAmt = (pushRadius - dist)*2;
         obj.position.add(forward.clone().multiplyScalar(pushAmt));
         if (this.onPush) this.onPush(obj.name, obj.position);
       }
