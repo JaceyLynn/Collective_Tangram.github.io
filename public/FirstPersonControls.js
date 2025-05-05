@@ -131,29 +131,33 @@ export class FirstPersonControls {
     return forward.normalize();
   }
 
-  _handleCollisions(oldPos) {
-    // Cast from just below the camera
-    const origin = this.camera.position.clone();
-    origin.y -= this.cameraHeight;
+_handleCollisions(oldPos) {
+  // Raycast from just below the camera straight ahead
+  const origin = this.camera.position.clone();
+  origin.y -= this.cameraHeight;
+  this.raycaster.set(origin, this._getForwardDir());
 
-    this.raycaster.set(origin, this._getForwardDir());
-    const hits = this.raycaster.intersectObjects(this.scene.children, true);
+  // Only test against walls + pieces, not the floor itself:
+  const collidables = this.scene.children.filter(
+    (obj) => obj.name !== "floor"
+  );
+  const hits = this.raycaster.intersectObjects(collidables, true);
+  if (hits.length === 0) return;
 
-    if (hits.length > 0) {
-      const hit   = hits[0];
-      const mesh  = hit.object.parent || hit.object;
+  const hit  = hits[0];
+  const mesh = hit.object.parent || hit.object;
 
-      // If it’s a dynamic piece (user‐added), push it
-      if (!mesh.userData.static) {
-        const pushAmt = (1 - THREE.MathUtils.clamp(hit.distance, 0, 1)) * 10;
-        mesh.position.add(this._getForwardDir().multiplyScalar(pushAmt));
-        if (this.onPush) this.onPush(mesh.name, mesh.position);
-      }
-
-      // Revert the camera so you don’t walk through
-      this.camera.position.copy(oldPos);
-    }
+  if (!mesh.userData.static) {
+    // dynamic piece → push it out of your way
+    const pushAmt = (1 - THREE.MathUtils.clamp(hit.distance, 0, 1)) * 10;
+    mesh.position.add(this._getForwardDir().multiplyScalar(pushAmt));
+    if (this.onPush) this.onPush(mesh.name, mesh.position);
+    // (no camera revert, so you can “walk through” and shove them)
+  } else {
+    // static obstacle (walls) → block movement
+    this.camera.position.copy(oldPos);
   }
+}
 
   /**
    * Optionally call from main.js to sync pushes to server

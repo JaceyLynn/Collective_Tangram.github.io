@@ -77,6 +77,10 @@ camera.lookAt(0, 0, 0);
       ts: Date.now(),
     });
   });
+  // Make sure the canvas can receive focus/keyboard if needed:
+  renderer.domElement.setAttribute("tabindex", 0);
+  renderer.domElement.style.outline = "none";
+  renderer.domElement.focus();
 
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
 // color: white, intensity: 0.4 (tweak up/down as needed)
@@ -215,16 +219,6 @@ scene.add(westWall);
     alert("You've reached your 7-piece limit!");
   });
 
-  document.addEventListener("keydown", (e) => {
-    if (e.code === "Space" && !dragging) {
-      console.log("Space pressed! dragging:", dragging);
-      e.preventDefault();
-      instantiateNewPiece();
-    }
-    if (e.key === "Shift" && pickedObject) {
-      rotateObjectBy45Degrees();
-    }
-  });
   animate();
 }
 
@@ -278,140 +272,6 @@ function createOrUpdatePiece(piece) {
     scene.add(model);
   });
 }
-
-// //initiate drag and rotate
-// function onMouseDown(event) {
-//   // update normalized device coords from this event
-//   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-//   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-//   raycaster.setFromCamera(mouse, camera);
-//   const intersects = raycaster.intersectObjects(scene.children, true);
-
-//   console.log("Mouse down detected!");
-//   console.log("Intersections:", intersects.length, intersects);
-
-//   if (intersects.length > 0) {
-//     let clickedObject = intersects[0].object;
-
-//     // Ignore TransformControls if clicked
-//     if (
-//       clickedObject.type === "Object3D" &&
-//       clickedObject.parent?.type === "TransformControls"
-//     ) {
-//       console.log("Clicked on TransformControls, ignoring...");
-//       return;
-//     }
-
-//     // Traverse up to the parent if necessary
-//     while (clickedObject.parent && clickedObject.parent !== scene) {
-//       clickedObject = clickedObject.parent;
-//     }
-
-//     console.log("Clicked Object:", clickedObject.name || clickedObject);
-
-//     if (myModels.get(clickedObject) === "draggable") {
-//       pickedObject = clickedObject;
-//       let clickedPoint = intersects[0].point.clone();
-
-//       console.log("Picked Object:", pickedObject.name || pickedObject);
-
-//       // Store rotation center
-//       pickedObject.userData.rotationCenter = clickedPoint.clone();
-
-//       // Store offset for dragging
-//       pickedObject.userData.offset = new THREE.Vector3().subVectors(
-//         pickedObject.position,
-//         clickedPoint
-//       );
-
-//       dragging = true;
-//       isRotating = event.shiftKey; // Hold shift to rotate
-
-//       console.log("Dragging started:", dragging);
-//       console.log("Rotation Mode:", isRotating);
-//     } else {
-//       console.log("Object is not draggable.");
-//     }
-//   } else {
-//     console.log("No object clicked.");
-//   }
-// }
-
-// //move with mouse
-// function onMouseMove(event) {
-//   // 1) update mouse coords
-//   mouse.x =  (event.clientX / window.innerWidth)  * 2 - 1;
-//   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-//   if (!dragging || !pickedObject || isRotating) return;
-
-//   // 2) raycast down on the floor
-//   raycaster.setFromCamera(mouse, camera);
-//   const floor = scene.getObjectByName("floor");
-//   const hits  = raycaster.intersectObject(floor, true);
-//   if (!hits.length) return;
-//   const point = hits[0].point;
-
-//   // 3) compute the new position
-//   const newPos = new THREE.Vector3(
-//     point.x + pickedObject.userData.offset.x,
-//     pickedObject.position.y,
-//     point.z + pickedObject.userData.offset.z
-//   );
-
-//   // 4) test collision with a shrunken bounding‐box
-//   const margin = 7;  // adjust to taste
-//   const originalPos = pickedObject.position.clone();
-//   pickedObject.position.copy(newPos);
-
-//   // build & inset your test box
-//   const testBox = new THREE.Box3().setFromObject(pickedObject);
-//   testBox.expandByScalar(-margin);
-
-//   // check against every other piece
-//   let collision = false;
-//   pieces.forEach(p => {
-//     if (p.id === pickedObject.name) return;
-//     const otherMesh = scene.getObjectByName(p.id);
-//     if (!otherMesh) return;
-
-//     const otherBox = new THREE.Box3().setFromObject(otherMesh);
-//     otherBox.expandByScalar(-margin);
-
-//     if (testBox.intersectsBox(otherBox)) {
-//       collision = true;
-//     }
-//   });
-
-//   // 5) revert or commit
-//   if (collision) {
-//     pickedObject.position.copy(originalPos);
-//   } else {
-//     // valid: broadcast & trail
-//     const action = {
-//       type:  "move",
-//       piece: { id: pickedObject.name },
-//       data:  { position: pickedObject.position },
-//       userId: socket.id,
-//       ts:     Date.now()
-//     };
-//     socket.emit("pieceAction", action);
-//     createTrail(pickedObject.position, pickedObject);
-//   }
-// }
-
-
-// //stop moving when mouse release
-// function onMouseUp() {
-//   console.log("Mouse up, stopping dragging.");
-//   dragging = false;
-//   pickedObject = null;
-//   fadeOutTrail();
-// }
-
-// let rotationStep = 45; // 45 degrees per shift press
-// let rotationAngle = 0; // Track current rotation angle
-// let rotationInProgress = false; // Prevent continuous rotation while shift is held
 
 function instantiateNewPiece() {
   // raycast once at the current mouse.x/y
@@ -551,54 +411,6 @@ function rotateClosestPieceBy45() {
   requestAnimationFrame(tick);
 }
 
-// // Function to rotate the object by 45 degrees around its center
-// function rotateObjectBy45Degrees() {
-//   if (!pickedObject || rotationInProgress) return;
-//   rotationInProgress = true;
-
-//   // Compute start & end angles
-//   const startAngle = pickedObject.rotation.y;
-//   rotationAngle += rotationStep;                       // your accumulated angle
-//   const endAngle   = THREE.MathUtils.degToRad(rotationAngle);
-
-//   const duration    = 300;     // ms
-//   const startTime   = performance.now();
-
-//   function animateRotation(now) {
-//     const elapsed = now - startTime;
-//     const t       = Math.min(elapsed / duration, 1);
-//     // ease in/out (optional)
-//     const easeT   = t < 0.5 
-//       ? 2*t*t 
-//       : -1 + (4 - 2*t)*t;
-
-//     // lerp between start & end
-//     pickedObject.rotation.y = THREE.MathUtils.lerp(startAngle, endAngle, easeT);
-
-//     if (t < 1) {
-//       requestAnimationFrame(animateRotation);
-//     } else {
-//       rotationInProgress = false;
-//       // after the rotation is done, emit the final rotation to the server:
-//       const action = {
-//         type:  "rotate",
-//         piece: { id: pickedObject.name },
-//         data:  { rotation: {
-//                     x: pickedObject.rotation.x,
-//                     y: pickedObject.rotation.y,
-//                     z: pickedObject.rotation.z
-//                   }
-//               },
-//         userId: socket.id,
-//         ts:     Date.now()
-//       };
-//       socket.emit("pieceAction", action);
-//     }
-//   }
-
-//   requestAnimationFrame(animateRotation);
-// }
-
 //add cute trail of triangles
 function createTrail(position, object) {
   const geometry = new THREE.CircleGeometry(Math.random() * 20 + 5, 3);
@@ -660,8 +472,7 @@ function animate() {
   }
   requestAnimationFrame(animate);
   // use the *global* controls here
-  const now = performance.now();
-  controls.update(now);
+  controls.update(performance.now());
   renderer.render(scene, camera);
 }
 
