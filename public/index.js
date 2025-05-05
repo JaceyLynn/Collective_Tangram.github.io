@@ -254,36 +254,56 @@ function createOrUpdatePiece(piece) {
 }
 
 function instantiateNewPiece() {
-  // 1) Compute a point some units in front of the camera…
+  // 1) Compute a raw spawn X/Z some units in front of the camera
   const forward = new THREE.Vector3(0, 0, -1)
     .applyQuaternion(camera.quaternion)
     .normalize();
-  const spawnDistance = 50; // how far in front of you it appears
-  const spawnPos = camera.position.clone().add(forward.multiplyScalar(spawnDistance));
+  const spawnDistance = 50; 
+  const rawXZ = camera.position.clone()
+    .add(forward.multiplyScalar(spawnDistance));
 
-  // 2) Build the piece data
+  // 2) Ray down from high above that X/Z to find the floor
+  const downOrigin = new THREE.Vector3(rawXZ.x, 1000, rawXZ.z);
+  raycaster.set(downOrigin, new THREE.Vector3(0, -1, 0));
+  const floor = scene.getObjectByName("floor");
+  const hits  = raycaster.intersectObject(floor, true);
+  if (!hits.length) {
+    console.warn("instantiateNewPiece: no floor hit at", rawXZ.x, rawXZ.z);
+    return;
+  }
+  const spawnPos = hits[0].point;  // { x, y=0, z }
+
+  // 3) Build the piece data at that ground position
   const id = generateUniqueId();
+  const idx = currentModelIndex;
   const pieceData = {
     id,
-    modelIndex: currentModelIndex,
-    color:      rainbowColors[currentModelIndex],
+    modelIndex: idx,
+    color:      rainbowColors[idx],
     position:   { x: spawnPos.x, y: spawnPos.y, z: spawnPos.z },
     rotation:   { x: 0, y: 0, z: 0 },
   };
 
-  // 3) Emit the “add” action to everyone
-  const action = {
+  // 4) Emit the add event
+  socket.emit("pieceAction", {
     type:  "add",
-    piece: { id, modelIndex: pieceData.modelIndex, color: pieceData.color },
-    data:  { position: pieceData.position, rotation: pieceData.rotation },
+    piece: {
+      id:         pieceData.id,
+      modelIndex: pieceData.modelIndex,
+      color:      pieceData.color,
+    },
+    data: {
+      position: pieceData.position,
+      rotation: pieceData.rotation,
+    },
     userId: socket.id,
     ts:     Date.now(),
-  };
-  socket.emit("pieceAction", action);
+  });
 
-  // 4) Advance your model index for the next spawn
+  // 5) Cycle to the next model/color for the *next* spawn
   currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
 }
+
 
 
 function updateScene() {

@@ -18,7 +18,8 @@ export class FirstPersonControls {
     this.velocity     = new THREE.Vector3();
     this.direction    = new THREE.Vector3();
     this.prevTime     = performance.now();
-
+    this.lookSpeed   = 0.1;              // degrees (or radians) per pixel of mouse move
+    this.isLocked    = false;
     // look‑around state (lon/lat)
     this.lon                 = 0;
     this.lat                 = 0;
@@ -51,10 +52,17 @@ export class FirstPersonControls {
     });
 
     // mouse‑drag to look
+    // 1) Request pointer‑lock on click
     const dom = this.renderer.domElement;
-    dom.addEventListener("mousedown", this._onPointerDown.bind(this), false);
-    dom.addEventListener("mousemove", this._onPointerMove.bind(this), false);
-    dom.addEventListener("mouseup",   this._onPointerUp.bind(this),   false);
+    dom.addEventListener("click", () => dom.requestPointerLock());
+
+    // 2) Track lock state
+    document.addEventListener("pointerlockchange", () => {
+      this.isLocked = (document.pointerLockElement === dom);
+    });
+
+    // 3) Mouse‑look when locked
+    document.addEventListener("mousemove", this._onMouseMove.bind(this));
   }
 
   _onKeyDown(e) {
@@ -146,6 +154,18 @@ export class FirstPersonControls {
     const forward = new THREE.Vector3(0,0,-1).applyQuaternion(this.camera.quaternion);
     forward.y = 0;
     return forward.normalize();
+  }
+  _onMouseMove(event) {
+    if (!this.isLocked) return; // only when pointer‑lock is active
+
+    // update lon/lat by raw movementX/Y
+    this.lon -= event.movementX * this.lookSpeed;
+    this.lat -= event.movementY * this.lookSpeed;
+
+    // clamp pitch to avoid flip
+    this.lat = Math.max(-85, Math.min(85, this.lat));
+
+    this.computeCameraOrientation();
   }
 
 _handleCollisions(oldPos) {
