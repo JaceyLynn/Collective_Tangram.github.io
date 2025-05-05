@@ -97,12 +97,35 @@ function init() {
   });
 
   // ─── Lighting ───────────────────────────────────────────────────────────
-  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-  const dirL = new THREE.DirectionalLight(0xffffff, 4);
-  dirL.position.set(300, 1000, 100);
-  dirL.castShadow = true;
-  dirL.shadow.mapSize.set(2048, 2048);
-  scene.add(dirL);
+  // white ambient for overall brightness
+  const ambient = new THREE.AmbientLight(0xffffff, 3);
+  scene.add(ambient);
+
+  // helper to create a directional light
+  function makeDirLight(colorHex, x, y, z, intensity = 1) {
+    const light = new THREE.DirectionalLight(colorHex, intensity);
+    light.position.set(x, y, z);
+    light.castShadow = true;
+    // optional: tweak shadow map size/range per light if needed
+    light.shadow.mapSize.set(1024, 1024);
+    scene.add(light);
+    return light;
+  }
+
+  const d = 2000;   // distance from center
+  const h = 500;   // height above ground
+
+  // Cyan light from +X (East)
+  makeDirLight(0x00ffff,  d, h,  0, 1.0);
+
+  // Magenta light from -X (West)
+  makeDirLight(0xff00ff, -d, h,  0, 1.0);
+
+  // Yellow light from +Z (South)
+  makeDirLight(0xffff00,  0, h,  d, 1.0);
+
+  // Green light from -Z (North)
+  makeDirLight(0x00ff00,  0, h, -d, 1.0);
 
   // --- Floor ---
   customTexture.wrapS = THREE.RepeatWrapping;
@@ -161,14 +184,14 @@ floatingBoxes = [];
 const floorSize  = 3500;
 const halfFloor  = floorSize / 2;
 
-const knotCount = 150;
+const knotCount = 100;
 for (let i = 0; i < knotCount; i++) {
   // random p & q
   const p = THREE.MathUtils.randInt(2, 10);
   const q = THREE.MathUtils.randInt(2, 10);
 
   // random size
-  const radius    = THREE.MathUtils.randFloat(100, 60);
+  const radius    = THREE.MathUtils.randFloat(30, 100);
   const tube      = radius * 0.3;
   const geometry  = new THREE.TorusKnotGeometry(
     radius, tube, 100, 16, p, q
@@ -177,7 +200,7 @@ for (let i = 0; i < knotCount; i++) {
   const knot      = new THREE.Mesh(geometry, material);
 
   // place outside the walls
-  const spawnRadius = halfFloor + 200 + Math.random() * 800;
+  const spawnRadius = 3000 + 200 + Math.random() * 800;
   const angle       = Math.random() * Math.PI * 2;
   knot.position.set(
     Math.cos(angle) * spawnRadius,
@@ -188,7 +211,19 @@ for (let i = 0; i < knotCount; i++) {
   // for bobbing
   knot.userData.baseY = knot.position.y;
   knot.userData.phase = Math.random() * Math.PI * 2;
+  // 1) Random initial rotation:
+  knot.rotation.set(
+    Math.random() * Math.PI * 2,
+    Math.random() * Math.PI * 2,
+    Math.random() * Math.PI * 2
+  );
 
+  // 2) Assign a tiny random rotation speed (radians per second):
+  knot.userData.rotVelocity = new THREE.Vector3(
+    THREE.MathUtils.randFloat(-0.5, 0.5),
+    THREE.MathUtils.randFloat(-0.5, 0.5),
+    THREE.MathUtils.randFloat(-0.5, 0.5)
+  );
   floatingBoxes.push(knot);
   scene.add(knot);
 }
@@ -546,13 +581,20 @@ function animate() {
   // 1) update controls / movement
   const now = performance.now();
   controls.update(now);
-
+const delta = (now - controls.prevTime) / 1000;
   // ─── Float the knot up & down ─────────────────────────────────────────────
-  // in animate(), after controls.update(now):
+
+  // float them up/down
   const t = now * 0.002;
   floatingBoxes.forEach((knot) => {
-    knot.position.y =
-      knot.userData.baseY + Math.sin(t + knot.userData.phase) * 20;
+    knot.position.y = knot.userData.baseY
+      + Math.sin(t + knot.userData.phase) * 20;
+
+    // 3) apply their per‑knot spin:
+    const rv = knot.userData.rotVelocity;
+    knot.rotation.x += rv.x * delta;
+    knot.rotation.y += rv.y * delta;
+    knot.rotation.z += rv.z * delta;
   });
 
   // 2) compute a hue from camera position (or time)
