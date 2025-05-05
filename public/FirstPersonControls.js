@@ -148,38 +148,38 @@ export class FirstPersonControls {
   }
 
 _handleCollisions(oldPos) {
-  // 1) Block static obstacles (walls) via a short‐ray test
+  // 1) Block walking through walls (static only)
   const origin = this.camera.position.clone();
   origin.y -= this.cameraHeight;
   this.raycaster.set(origin, this._getForwardDir());
-  // only test against static meshes
-  const staticObjs = this.scene.children.filter(o => o.userData.static);
-  const wallHits = this.raycaster.intersectObjects(staticObjs, true);
+  const wallHits = this.raycaster.intersectObjects(
+    this.scene.children.filter(o => o.userData.static),
+    true
+  );
   if (wallHits.length) {
     this.camera.position.copy(oldPos);
   }
 
-  // 2) Push dynamic pieces via sphere‐box intersection
-  const pushRadius = 30;                                 // adjust for “reach”
+  // 2) Push dynamic pieces (root groups) via sphere‐box test
+  const pushRadius = 15;              // how far your “hand” reaches
   const forward   = this._getForwardDir();
 
-  this.scene.traverse(obj => {
-    // only dynamic piece groups / meshes
-    if (obj.userData.static === false && obj.isMesh) {
-      // build its world‐space AABB
-      const box = new THREE.Box3().setFromObject(obj);
-      // find the closest point on that box to the camera
+  this.scene.children.forEach((obj) => {
+    // only non‑static root groups
+    if (obj.userData.static === false && obj.type === "Group") {
+      const box     = new THREE.Box3().setFromObject(obj);
       const closest = box.clampPoint(this.camera.position, new THREE.Vector3());
       const dist    = closest.distanceTo(this.camera.position);
+
       if (dist < pushRadius) {
-        // push it out along your forward direction
-        const pushAmt = 5*(pushRadius - dist);
+        const pushAmt = pushRadius - dist;
         obj.position.add(forward.clone().multiplyScalar(pushAmt));
         if (this.onPush) this.onPush(obj.name, obj.position);
       }
     }
   });
 }
+
 
 
   setPushCallback(cb) {

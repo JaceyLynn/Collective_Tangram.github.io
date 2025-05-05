@@ -224,7 +224,7 @@ scene.add(westWall);
 
 // Function to create or update pieces in the scene
 function createOrUpdatePiece(piece) {
-  // validate modelIndex  
+  // 1) Validate & pick the correct URL
   const idx = Number.isInteger(piece.modelIndex)
     && piece.modelIndex >= 0
     && piece.modelIndex < modelLinks.length
@@ -236,42 +236,39 @@ function createOrUpdatePiece(piece) {
     return;
   }
 
-  const existing = scene.getObjectByName(piece.id);
+  // 2) If it’s already in the scene, just update its transform
+  let existing = scene.getObjectByName(piece.id);
   if (existing) {
-    existing.position.set(...Object.values(piece.position));
-    existing.rotation.set(...Object.values(piece.rotation));
+    existing.position.set(piece.position.x, piece.position.y, piece.position.z);
+    existing.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
     return;
   }
 
-
-  // Otherwise, load it for the first time
+  // 3) Otherwise, load it for the first time
   const loader = new GLTFLoader();
-  loader.load(modelLinks[piece.modelIndex], (gltf) => {
+  loader.load(url, (gltf) => {
     const model = gltf.scene;
     model.name = piece.id;
 
-    // Apply position & rotation
-    model.position.set(piece.position.x, piece.position.y, piece.position.z);
-    model.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
-
-    // Colorize
-    model.traverse((c) => {
-      if (c.isMesh) {
-        c.material = new THREE.MeshStandardMaterial({ color: piece.color });
+    // 4) Mark static vs. draggable on every node
+    model.userData.static = Boolean(piece.static);
+    model.traverse((node) => {
+      node.userData.static = Boolean(piece.static);
+      if (node.isMesh) {
+        node.material = new THREE.MeshStandardMaterial({ color: piece.color });
+        myModels.set(node, piece.static ? "static" : "draggable");
       }
     });
 
-    // Mark as static or draggable
-    model.userData.static = Boolean(piece.static);
-    if (piece.static) {
-      myModels.set(model, "static");
-    } else {
-      myModels.set(model, "draggable");
-    }
+    // 5) Apply initial transform
+    model.position.set(piece.position.x, piece.position.y, piece.position.z);
+    model.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
 
+    // 6) Add it to the scene
     scene.add(model);
   });
 }
+
 
 function instantiateNewPiece() {
   // raycast once at the current mouse.x/y
