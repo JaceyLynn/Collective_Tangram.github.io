@@ -2,6 +2,7 @@ import * as THREE from "three";
 // import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { FirstPersonControls } from "./FirstPersonControls.js";
+import { getArt } from "./getArt.js";
 
 let socket;
 // Generate a unique ID for each new piece
@@ -171,7 +172,28 @@ function init() {
     floatingBoxes.push(box);
     scene.add(box);
   }
+// 1) Query the AIC API for exactly as many images as boxes
+getArt("geometric composition", floatingBoxes.length)
+  .then((arts) => {
+    // 2) For each result, load the texture and apply it to that box
+    const count = Math.min(arts.length, floatingBoxes.length);
+    for (let i = 0; i < count; i++) {
+      const { imageUrl, title, artist } = arts[i];
+      const box = floatingBoxes[i];
 
+      // swap its material to use the fetched image
+      const tex = new THREE.TextureLoader().load(imageUrl);
+      box.material = new THREE.MeshStandardMaterial({
+        map: tex,
+        roughness: 0.8,
+        metalness: 0.2,
+      });
+
+      // optional: store the metadata on the box for hover/tooltips later
+      box.userData.artInfo = { title, artist };
+    }
+  })
+  .catch((err) => console.error("Failed to load art:", err));
   // --- Model links array ---
   modelLinks = [
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_1.glb?v=1740980622181", // Model 2 (Red)
