@@ -46,27 +46,35 @@ const rainbowColors = [
 ];
 
 function init() {
-
-  
-  // --- THREE scaffolding ---
+  // --- THREE.js scaffolding ---
   scene = new THREE.Scene();
   scene.background = new THREE.Color("#404040");
-  camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 10000);
+
+  camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    10000
+  );
   camera.position.set(10, 20, 200);
-camera.lookAt(0, 0, 0);
+  camera.lookAt(0, 0, 0);
+
   renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(innerWidth, innerHeight);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  // allow the canvas to receive focus so it gets keyboard events
+  renderer.domElement.setAttribute("tabindex", 0);
+  renderer.domElement.style.outline = "none";
   document.body.appendChild(renderer.domElement);
+  renderer.domElement.focus();
 
   // --- First‑person controls ---
   controls = new FirstPersonControls(
     scene,
     camera,
     renderer,
-    () => instantiateNewPiece(),    // Space → add piece
-    () => rotateClosestPieceBy45()  // R → rotate nearest
+    () => instantiateNewPiece(), // Space → add piece
+    () => rotateClosestPieceBy45() // R → rotate nearest
   );
-  // **Must** initialize prevTime on the *same* controls instance
   controls.prevTime = performance.now();
   controls.setPushCallback((id, pos) => {
     socket.emit("pieceAction", {
@@ -77,93 +85,71 @@ camera.lookAt(0, 0, 0);
       ts: Date.now(),
     });
   });
-  // Make sure the canvas can receive focus/keyboard if needed:
-  renderer.domElement.setAttribute("tabindex", 0);
-  renderer.domElement.style.outline = "none";
-  renderer.domElement.focus();
 
+  // --- Ambient + directional lighting ---
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-// color: white, intensity: 0.4 (tweak up/down as needed)
-scene.add(ambientLight);
-  // Set up the light with shadow
-  const light = new THREE.DirectionalLight(0xffffff, 4);
-  light.position.set(300, 1000, 100);
-  light.castShadow = true;
-  light.shadow.mapSize.width = 2048;
-  light.shadow.mapSize.height = 2048;
-  light.shadow.camera.near = 0.5;
-  light.shadow.camera.far = 5000;
-  scene.add(light);
+  scene.add(ambientLight);
 
-  //floor plate
+  const dirLight = new THREE.DirectionalLight(0xffffff, 4);
+  dirLight.position.set(300, 1000, 100);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 2048;
+  dirLight.shadow.mapSize.height = 2048;
+  dirLight.shadow.camera.near = 0.5;
+  dirLight.shadow.camera.far = 5000;
+  scene.add(dirLight);
+
+  // --- Floor ---
   customTexture.wrapS = THREE.RepeatWrapping;
   customTexture.wrapT = THREE.RepeatWrapping;
   customTexture.repeat.set(2, 2);
-  const planeGeometry = new THREE.PlaneGeometry(3500, 3500);
-  const planeMaterial = new THREE.MeshStandardMaterial({
+  const planeGeo = new THREE.PlaneGeometry(3500, 3500);
+  const planeMat = new THREE.MeshStandardMaterial({
     map: customTexture,
     side: THREE.DoubleSide,
   });
-  const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-  plane.rotation.x = -Math.PI / 2; // lay flat
-  scene.add(plane);
-  plane.name = "floor";
+  const floorMesh = new THREE.Mesh(planeGeo, planeMat);
+  floorMesh.rotation.x = -Math.PI / 2;
+  floorMesh.name = "floor";
+  scene.add(floorMesh);
 
-  
+  // --- Walls ---
   const wallTexture = new THREE.TextureLoader().load(
-  "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/TCom_StrandedBambooPlate_1K_albedo.png?v=1740983774496"
-);
-// Enable wrapping so it repeats
-wallTexture.wrapS = THREE.RepeatWrapping;
-wallTexture.wrapT = THREE.RepeatWrapping;
-// Tile it along the length (3400 units) and height (400 units)
-// You can tweak these repeat values to taste:
-wallTexture.repeat.set(4, 1);  
-// wall dimensions
-const wallLength    = 3500;
-const wallHeight    = 400;
-const wallThickness =   50;
-const halfSize      = wallLength / 2;
-const halfThick     = wallThickness / 2;
+    "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/TCom_StrandedBambooPlate_1K_albedo.png?v=1740983774496"
+  );
+  wallTexture.wrapS = THREE.RepeatWrapping;
+  wallTexture.wrapT = THREE.RepeatWrapping;
+  wallTexture.repeat.set(4, 1);
 
-// shared wall material using the texture
-const wallMat = new THREE.MeshStandardMaterial({
-  map: wallTexture,
-  side: THREE.DoubleSide
-});
+  const wallMat = new THREE.MeshStandardMaterial({
+    map: wallTexture,
+    side: THREE.DoubleSide,
+  });
+  const L = 3500,
+    H = 400,
+    T = 50,
+    half = L / 2,
+    t2 = T / 2;
 
-// ─── North wall ───
-const northGeo = new THREE.BoxGeometry(wallLength, wallHeight, wallThickness);
-const northWall = new THREE.Mesh(northGeo, wallMat);
-northWall.position.set(0, wallHeight / 2, halfSize + halfThick);
-northWall.castShadow = true;
-northWall.receiveShadow = true;
-scene.add(northWall);
+  // North & South
+  [half + t2, -(half + t2)].forEach((z) => {
+    const geo = new THREE.BoxGeometry(L, H, T);
+    const wall = new THREE.Mesh(geo, wallMat);
+    wall.position.set(0, H / 2, z);
+    wall.userData.static = true;
+    scene.add(wall);
+  });
 
-// ─── South wall ───
-const southWall = northWall.clone();
-southWall.position.set(0, wallHeight / 2, -halfSize - halfThick);
-scene.add(southWall);
+  // East & West
+  [half + t2, -(half + t2)].forEach((x) => {
+    const geo = new THREE.BoxGeometry(T, H, L);
+    const wall = new THREE.Mesh(geo, wallMat);
+    wall.position.set(x, H / 2, 0);
+    wall.userData.static = true;
+    scene.add(wall);
+  });
 
-// ─── East wall ───
-const eastGeo = new THREE.BoxGeometry(wallThickness, wallHeight, wallLength);
-const eastWall = new THREE.Mesh(eastGeo, wallMat);
-eastWall.position.set(halfSize + halfThick, wallHeight / 2, 0);
-eastWall.castShadow = true;
-eastWall.receiveShadow = true;
-scene.add(eastWall);
-
-// ─── West wall ───
-const westWall = eastWall.clone();
-westWall.position.set(-halfSize - halfThick, wallHeight / 2, 0);
-scene.add(westWall);
-
-
-
-  // // Add orbit controls
-  // let controls = new OrbitControls(camera, renderer.domElement);
-
-  // Load models
+  // --- Model links array ---
   modelLinks = [
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_1.glb?v=1740980622181", // Model 2 (Red)
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_2.glb?v=1740980636308", // Model 3 (Orange)
@@ -173,78 +159,62 @@ scene.add(westWall);
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_6.glb?v=1740980654436", // Model 7 (Indigo)
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_7.glb?v=1740980657856", // Model 8 (Purple)
   ];
-  //setup model
-  const loader = new GLTFLoader();
 
-  //setup mouse interaction
-  // document.addEventListener("mousedown", onMouseDown);
-  // document.addEventListener("mousemove", onMouseMove);
-  // document.addEventListener("mouseup", onMouseUp);
-  socket = io({
-    transports: ["websocket"], // <-- no polling, only ws
+  // --- Socket.io setup ---
+  socket = io({ transports: ["websocket"] });
+  socket.on("connect", () => console.log("Connected, socket id:", socket.id));
+
+  socket.on("initialize", (existing) => {
+    pieces = existing;
+    pieces.forEach(createOrUpdatePiece);
   });
+  socket.on("newPiece", (p) => {
+    if (!pieces.find((x) => x.id === p.id)) {
+      pieces.push(p);
+      createOrUpdatePiece(p);
+    }
+  });
+  socket.on("pieceUpdated", (upd) => {
+    const i = pieces.findIndex((x) => x.id === upd.id);
+    if (i !== -1) {
+      pieces[i] = upd;
+      createOrUpdatePiece(upd);
+    }
+  });
+  socket.on("limitReached", () => alert("You've reached your 7-piece limit!"));
 
-  // once, at init time:
+  // --- Track raw mouse coords for raycasting if needed ---
   window.addEventListener("mousemove", (e) => {
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
   });
-  
 
-  socket.on("connect", () => {
-    console.log("Connected over WebSocket, socket id:", socket.id);
+  // --- V‑key “bird’s eye” handlers ---
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "KeyV" && savedCamPosition === null) {
+      savedCamPosition = camera.position.clone();
+      camera.position.set(0, 1000, 0);
+      camera.lookat(0, 0, 0);
+    }
   });
-
-  // --- new multiplayer piece handlers ---
-  socket.on("initialize", (existingPieces) => {
-    pieces = existingPieces;
-    pieces.forEach(createOrUpdatePiece);
-  });
-
-  socket.on("newPiece", (newPiece) => {
-    if (!pieces.find((p) => p.id === newPiece.id)) {
-      pieces.push(newPiece);
-      createOrUpdatePiece(newPiece);
+  window.addEventListener("keyup", (e) => {
+    if (e.code === "KeyV" && savedCamPosition !== null) {
+      camera.position.copy(savedCamPosition);
+      savedCamPosition = null;
     }
   });
 
-  socket.on("pieceUpdated", (updated) => {
-    const idx = pieces.findIndex((p) => p.id === updated.id);
-    if (idx !== -1) {
-      pieces[idx] = updated;
-      createOrUpdatePiece(updated);
-    }
-  });
-
-  socket.on("limitReached", () => {
-    alert("You've reached your 7-piece limit!");
-  });
-// listen for V down
-window.addEventListener("keydown", (e) => {
-  if (e.code === "KeyV" && savedCamPosition === null) {
-    // save & lift
-    savedCamPosition = camera.position.clone();
-    camera.position.set(0, 1000, 0);
-  }
-});
-
-// listen for V up
-window.addEventListener("keyup", (e) => {
-  if (e.code === "KeyV" && savedCamPosition !== null) {
-    // restore
-    camera.position.copy(savedCamPosition);
-    savedCamPosition = null;
-  }
+  // --- Start rendering loop ---
   animate();
 }
-
 
 // Function to create or update pieces in the scene
 function createOrUpdatePiece(piece) {
   // 1) Validate & pick the correct URL
-  const idx = Number.isInteger(piece.modelIndex)
-    && piece.modelIndex >= 0
-    && piece.modelIndex < modelLinks.length
+  const idx =
+    Number.isInteger(piece.modelIndex) &&
+    piece.modelIndex >= 0 &&
+    piece.modelIndex < modelLinks.length
       ? piece.modelIndex
       : 0;
   const url = modelLinks[idx];
@@ -285,7 +255,6 @@ function createOrUpdatePiece(piece) {
     scene.add(model);
   });
 }
-
 
 function instantiateNewPiece() {
   // raycast once at the current mouse.x/y
@@ -390,16 +359,14 @@ function rotateClosestPieceBy45() {
 
   // 2) prepare for smooth tween from current to +45°
   const startAngle = closest.rotation.y;
-  const endAngle   = startAngle + THREE.MathUtils.degToRad(45);
-  const duration   = 300; // ms
-  const t0         = performance.now();
+  const endAngle = startAngle + THREE.MathUtils.degToRad(45);
+  const duration = 300; // ms
+  const t0 = performance.now();
 
   function tick(now) {
     const t = Math.min((now - t0) / duration, 1);
     // ease‐in‐out
-    const eased = t < 0.5
-      ? 2 * t * t
-      : -1 + (4 - 2 * t) * t;
+    const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
     closest.rotation.y = THREE.MathUtils.lerp(startAngle, endAngle, eased);
 
     if (t < 1) {

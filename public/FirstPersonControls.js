@@ -181,7 +181,6 @@ _handleCollisions(oldPos) {
 }
 
 
-
   setPushCallback(cb) {
     this.onPush = cb;
   }
