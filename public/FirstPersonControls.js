@@ -2,13 +2,6 @@
 import * as THREE from "three";
 
 export class FirstPersonControls {
-  /**
-   * @param {THREE.Scene}   scene
-   * @param {THREE.Camera}  camera
-   * @param {THREE.Renderer} renderer
-   * @param {Function}      instantiateCb  // called on Space press
-   * @param {Function}      rotateCb       // called on R press
-   */
   constructor(scene, camera, renderer, instantiateCb, rotateCb) {
     this.scene         = scene;
     this.camera        = camera;
@@ -17,40 +10,51 @@ export class FirstPersonControls {
     this.rotateCb      = rotateCb;
 
     // movement state
-    this.moveForward   = false;
-    this.moveBackward  = false;
-    this.moveLeft      = false;
-    this.moveRight     = false;
+    this.moveForward  = false;
+    this.moveBackward = false;
+    this.moveLeft     = false;
+    this.moveRight    = false;
 
-    this.velocity      = new THREE.Vector3();
-    this.direction     = new THREE.Vector3();
-    this.prevTime      = performance.now();
+    this.velocity     = new THREE.Vector3();
+    this.direction    = new THREE.Vector3();
+    this.prevTime     = performance.now();
 
-    // Height at which the camera “floats” above the floor
-    this.cameraHeight  = camera.position.y;
+    // look‑around state (lon/lat)
+    this.lon                 = 0;
+    this.lat                 = 0;
+    this.phi                 = 0;
+    this.theta               = 0;
+    this.onPointerDownPointerX = 0;
+    this.onPointerDownPointerY = 0;
+    this.onPointerDownLon    = 0;
+    this.onPointerDownLat    = 0;
+    this.isUserInteracting   = false;
 
-    // For pushing pieces out of the way
-    this.raycaster     = new THREE.Raycaster();
-    this.onPush        = null;  // you can set via setPushCallback()
+    // Height for collision origin
+    this.cameraHeight = camera.position.y;
+
+    // For pushing pieces
+    this.raycaster = new THREE.Raycaster();
+    this.onPush    = null;
 
     this._bindEvents();
   }
 
   _bindEvents() {
-    // Keyboard
+    // keyboard
     window.addEventListener("keydown", this._onKeyDown.bind(this));
     window.addEventListener("keyup",   this._onKeyUp.bind(this));
 
-    // Pointer‑lock on click
+    // pointer‑lock on click
     this.renderer.domElement.addEventListener("click", () => {
       this.renderer.domElement.requestPointerLock();
     });
-    document.addEventListener("pointerlockchange", () => {
-      // You could show/hide UI here if you like
-    });
 
-    // Mouse‐look
-    window.addEventListener("mousemove", this._onMouseMove.bind(this));
+    // mouse‑drag to look
+    const dom = this.renderer.domElement;
+    dom.addEventListener("mousedown", this._onPointerDown.bind(this), false);
+    dom.addEventListener("mousemove", this._onPointerMove.bind(this), false);
+    dom.addEventListener("mouseup",   this._onPointerUp.bind(this),   false);
   }
 
   _onKeyDown(e) {
@@ -59,12 +63,8 @@ export class FirstPersonControls {
       case "KeyS": this.moveBackward = true; break;
       case "KeyA": this.moveLeft     = true; break;
       case "KeyD": this.moveRight    = true; break;
-      case "Space": 
-        this.instantiateCb();
-        break;
-      case "KeyR":
-        this.rotateCb();
-        break;
+      case "Space": this.instantiateCb(); break;
+      case "KeyR":   this.rotateCb();      break;
     }
   }
 
@@ -77,95 +77,115 @@ export class FirstPersonControls {
     }
   }
 
-  _onMouseMove(e) {
-    // only when pointer is locked to the canvas
-    if (document.pointerLockElement === this.renderer.domElement) {
-      const movementX = e.movementX || 0;
-      const movementY = e.movementY || 0;
-      // yaw
-      this.camera.rotation.y -= movementX * 0.002;
-      // pitch (clamp so you can't flip upside‐down)
-      this.camera.rotation.x -= movementY * 0.002;
-      this.camera.rotation.x = Math.max(
-        -Math.PI / 2,
-        Math.min(Math.PI / 2, this.camera.rotation.x)
-      );
-    }
+  _onPointerDown(event) {
+    // only start if pointer is locked (optional)
+    this.isUserInteracting = true;
+    this.onPointerDownPointerX = event.clientX;
+    this.onPointerDownPointerY = event.clientY;
+    this.onPointerDownLon = this.lon;
+    this.onPointerDownLat = this.lat;
   }
 
-  /** 
-   * Call this from your animation loop.
-   * @param {number} nowMs   current performance.now()
-   */
+  _onPointerMove(event) {
+    if (!this.isUserInteracting) return;
+    // scale these to taste
+    const movementSpeed = 0.5;
+    this.lon = (this.onPointerDownPointerX - event.clientX) * movementSpeed + this.onPointerDownLon;
+    this.lat = (event.clientY - this.onPointerDownPointerY) * movementSpeed + this.onPointerDownLat;
+    this.computeCameraOrientation();
+  }
+
+  _onPointerUp(/*event*/) {
+    this.isUserInteracting = false;
+  }
+
+  computeCameraOrientation() {
+    // clamp lat so we don't flip
+    this.lat = Math.max(-85, Math.min(85, this.lat));
+    this.phi   = THREE.MathUtils.degToRad(90 - this.lat);
+    this.theta = THREE.MathUtils.degToRad(this.lon);
+
+    // project a point in front of the camera
+    this.camera.target = new THREE.Vector3(
+      500 * Math.sin(this.phi) * Math.cos(this.theta),
+      500 * Math.cos(this.phi),
+      500 * Math.sin(this.phi) * Math.sin(this.theta)
+    );
+    this.camera.lookAt(this.camera.target);
+  }
+
   update(nowMs) {
     const delta = (nowMs - this.prevTime) / 1000;
     this.prevTime = nowMs;
 
-    // Dampen velocity
+    // damp velocity
     this.velocity.x -= this.velocity.x * 10.0 * delta;
     this.velocity.z -= this.velocity.z * 10.0 * delta;
 
-    // Determine movement direction
+    // movement direction
     this.direction.z = (this.moveForward  ? 1 : 0) - (this.moveBackward  ? 1 : 0);
     this.direction.x = (this.moveRight    ? 1 : 0) - (this.moveLeft      ? 1 : 0);
     this.direction.normalize();
 
-    const speed = 200;
+    const speed = 1000;
     if (this.moveForward  || this.moveBackward) this.velocity.z -= this.direction.z * speed * delta;
     if (this.moveLeft     || this.moveRight)    this.velocity.x -= this.direction.x * speed * delta;
 
-    // Save old position in case we collide
     const oldPos = this.camera.position.clone();
 
-    // Strafe and forward/back
+    // apply movement
     this.camera.translateX(-this.velocity.x * delta);
     this.camera.position.add(this._getForwardDir().multiplyScalar(-this.velocity.z * delta));
 
-    // Check collisions and push pieces
+    // collisions / pushing
     this._handleCollisions(oldPos);
   }
 
   _getForwardDir() {
-    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+    const forward = new THREE.Vector3(0,0,-1).applyQuaternion(this.camera.quaternion);
     forward.y = 0;
     return forward.normalize();
   }
 
 _handleCollisions(oldPos) {
-  // Raycast from just below the camera straight ahead
+  // 1) Block static obstacles (walls) via a short‐ray test
   const origin = this.camera.position.clone();
   origin.y -= this.cameraHeight;
   this.raycaster.set(origin, this._getForwardDir());
-
-  // Only test against walls + pieces, not the floor itself:
-  const collidables = this.scene.children.filter(
-    (obj) => obj.name !== "floor"
-  );
-  const hits = this.raycaster.intersectObjects(collidables, true);
-  if (hits.length === 0) return;
-
-  const hit  = hits[0];
-  const mesh = hit.object.parent || hit.object;
-
-  if (!mesh.userData.static) {
-    // dynamic piece → push it out of your way
-    const pushAmt = (1 - THREE.MathUtils.clamp(hit.distance, 0, 1)) * 10;
-    mesh.position.add(this._getForwardDir().multiplyScalar(pushAmt));
-    if (this.onPush) this.onPush(mesh.name, mesh.position);
-    // (no camera revert, so you can “walk through” and shove them)
-  } else {
-    // static obstacle (walls) → block movement
+  // only test against static meshes
+  const staticObjs = this.scene.children.filter(o => o.userData.static);
+  const wallHits = this.raycaster.intersectObjects(staticObjs, true);
+  if (wallHits.length) {
     this.camera.position.copy(oldPos);
   }
+
+  // 2) Push dynamic pieces via sphere‐box intersection
+  const pushRadius = 30;                                 // adjust for “reach”
+  const forward   = this._getForwardDir();
+
+  this.scene.traverse(obj => {
+    // only dynamic piece groups / meshes
+    if (obj.userData.static === false && obj.isMesh) {
+      // build its world‐space AABB
+      const box = new THREE.Box3().setFromObject(obj);
+      // find the closest point on that box to the camera
+      const closest = box.clampPoint(this.camera.position, new THREE.Vector3());
+      const dist    = closest.distanceTo(this.camera.position);
+      if (dist < pushRadius) {
+        // push it out along your forward direction
+        const pushAmt = 5*(pushRadius - dist);
+        obj.position.add(forward.clone().multiplyScalar(pushAmt));
+        if (this.onPush) this.onPush(obj.name, obj.position);
+      }
+    }
+  });
 }
 
-  /**
-   * Optionally call from main.js to sync pushes to server
-   * @param {function(string, THREE.Vector3)} cb 
-   */
+
   setPushCallback(cb) {
     this.onPush = cb;
   }
 }
+
 
 
