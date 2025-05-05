@@ -116,16 +116,16 @@ function init() {
   const h = 500;   // height above ground
 
   // Cyan light from +X (East)
-  makeDirLight(0x00ffff,  d, h,  0, 1.0);
+  makeDirLight(0x00ffff,  d, h,  0, 2);
 
   // Magenta light from -X (West)
   makeDirLight(0xff00ff, -d, h,  0, 1.0);
 
   // Yellow light from +Z (South)
-  makeDirLight(0xffff00,  0, h,  d, 1.0);
+  makeDirLight(0xffff00,  0, h,  d, 2);
 
   // Green light from -Z (North)
-  makeDirLight(0x00ff00,  0, h, -d, 1.0);
+  makeDirLight(0x00ff00,  0, h, -d, 1.5);
 
   // --- Floor ---
   customTexture.wrapS = THREE.RepeatWrapping;
@@ -182,7 +182,6 @@ floatingBoxes = [];
 
 // floor dimensions (must match your PlaneGeometry)
 const floorSize  = 3500;
-const halfFloor  = floorSize / 2;
 
 const knotCount = 100;
 for (let i = 0; i < knotCount; i++) {
@@ -191,7 +190,7 @@ for (let i = 0; i < knotCount; i++) {
   const q = THREE.MathUtils.randInt(2, 10);
 
   // random size
-  const radius    = THREE.MathUtils.randFloat(30, 100);
+  const radius    = THREE.MathUtils.randFloat(20, 200);
   const tube      = radius * 0.3;
   const geometry  = new THREE.TorusKnotGeometry(
     radius, tube, 100, 16, p, q
@@ -204,7 +203,7 @@ for (let i = 0; i < knotCount; i++) {
   const angle       = Math.random() * Math.PI * 2;
   knot.position.set(
     Math.cos(angle) * spawnRadius,
-    THREE.MathUtils.randFloat(300, 5000), // some height
+    THREE.MathUtils.randFloat(300, 4000), // some height
     Math.sin(angle) * spawnRadius
   );
 

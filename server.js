@@ -86,7 +86,7 @@ mongoose.connection.once("open", async () => {
     static: Boolean(doc.static),
   }));
 
-  // seed templates if DB was empty!!!!!
+  // seed templates if DB was empty!!!!!com this out for clearing
   if (pieces.length === 0) {
     const templates = rainbowColors.map((color, idx) => ({
       _id: `template-${idx}`,
@@ -102,7 +102,7 @@ mongoose.connection.once("open", async () => {
     await Piece.insertMany(templates);
     pieces = templates;
   }
-
+// !!!!!com this out for clearing: https://cloud.mongodb.com/v2/6817b5f6201c225ac427245c#/metrics/replicaSet/6817b776f85e9f15ee587783/explorer/test
   // 6) Serve your static client files
   app.use(express.static("public"));
 
