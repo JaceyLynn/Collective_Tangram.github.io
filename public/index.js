@@ -27,7 +27,7 @@ let modelLinks = [];
 let savedCamPosition = null;
 let frameCounts = 0;
 let controls;
-
+let floatingBoxes = [];
 // Load PLANE texture
 const textureLoader = new THREE.TextureLoader();
 const customTexture = textureLoader.load(
@@ -145,6 +145,32 @@ function init() {
     wall.userData.static = true;
     scene.add(wall);
   });
+  // ─── Floating boxes ─────────────────────────────────────────────────────────
+  // place a bunch of random BoxGeometry outside the walls and give them each
+  // a baseY + random phase so they float up/down in animate()
+  const boxCount = 100;
+  for (let i = 0; i < boxCount; i++) {
+    const size = THREE.MathUtils.randFloat(200, 600);
+    const geo  = new THREE.BoxGeometry(size, size, size);
+    const mat  = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const box  = new THREE.Mesh(geo, mat);
+
+    // pick a random angle & radius outside your square of halfSize
+    const radius = 3000 + 200 + Math.random() * 800;
+    const angle  = Math.random() * Math.PI * 2;
+    box.position.set(
+      Math.cos(angle) * radius,
+      THREE.MathUtils.randFloat(300, 5000),   // initial Y between 20 and 100
+      Math.sin(angle) * radius
+    );
+
+    // store for animation
+    box.userData.baseY = box.position.y;
+    box.userData.phase = Math.random() * Math.PI * 2;
+
+    floatingBoxes.push(box);
+    scene.add(box);
+  }
 
   // --- Model links array ---
   modelLinks = [
@@ -475,13 +501,20 @@ function animate() {
   // 1) update controls / movement
   const now = performance.now();
   controls.update(now);
+  
+    // ─── Float the boxes up & down ─────────────────────────────────────────────
+  const t1 = now * 0.002;  // tweak speed here
+  floatingBoxes.forEach((box) => {
+    box.position.y = box.userData.baseY
+      + Math.sin(t1 + box.userData.phase) * 20;  // 20 = amplitude
+  });
 
   // 2) compute a hue from camera position (or time)
   //    here we mix both for effect:
-  const t = (now * 0.00005) % 1;        // slow time‑based shift
+  const t2 = (now * 0.00005) % 1;        // slow time‑based shift
   const p = (camera.position.x + camera.position.z) * 0.0002; 
   //    normalize camera x+z into roughly 0–1
-  const hue = (t + p) * 0.5;            // blend time & position
+  const hue = (t2 + p) * 0.5;            // blend time & position
 
   // 3) apply it
   scene.background = hueColor(hue);
