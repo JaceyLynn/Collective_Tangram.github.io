@@ -44,9 +44,8 @@ const rainbowColors = [
   "#97ADF6",
   "#C6A0D4",
 ];
-
 function init() {
-  // --- THREE.js scaffolding ---
+  // ─── Basic three.js setup ───────────────────────────────────────────────
   scene = new THREE.Scene();
   scene.background = new THREE.Color("#404040");
 
@@ -61,21 +60,23 @@ function init() {
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  // allow the canvas to receive focus so it gets keyboard events
+  // give the canvas focus so it can grab keyboard events
   renderer.domElement.setAttribute("tabindex", 0);
   renderer.domElement.style.outline = "none";
   document.body.appendChild(renderer.domElement);
   renderer.domElement.focus();
 
-  // --- First‑person controls ---
+  // ─── FirstPersonControls ────────────────────────────────────────────────
   controls = new FirstPersonControls(
     scene,
     camera,
     renderer,
-    () => instantiateNewPiece(), // Space → add piece
-    () => rotateClosestPieceBy45() // R → rotate nearest
+    () => instantiateNewPiece(),    // SPACE → add piece
+    () => rotateClosestPieceBy45()  // R     → rotate nearest
   );
+  // initialize its clock
   controls.prevTime = performance.now();
+  // whenever it pushes a piece, broadcast move to server
   controls.setPushCallback((id, pos) => {
     socket.emit("pieceAction", {
       type: "move",
@@ -86,18 +87,14 @@ function init() {
     });
   });
 
-  // --- Ambient + directional lighting ---
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-  scene.add(ambientLight);
+  // ─── Lighting ───────────────────────────────────────────────────────────
+  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+  const dirL = new THREE.DirectionalLight(0xffffff, 4);
+  dirL.position.set(300, 1000, 100);
+  dirL.castShadow = true;
+  dirL.shadow.mapSize.set(2048, 2048);
+  scene.add(dirL);
 
-  const dirLight = new THREE.DirectionalLight(0xffffff, 4);
-  dirLight.position.set(300, 1000, 100);
-  dirLight.castShadow = true;
-  dirLight.shadow.mapSize.width = 2048;
-  dirLight.shadow.mapSize.height = 2048;
-  dirLight.shadow.camera.near = 0.5;
-  dirLight.shadow.camera.far = 5000;
-  scene.add(dirLight);
 
   // --- Floor ---
   customTexture.wrapS = THREE.RepeatWrapping;
@@ -189,12 +186,12 @@ function init() {
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
   });
 
-  // --- V‑key “bird’s eye” handlers ---
+// ─── “Bird’s‑eye” V‑key handlers ────────────────────────────────────────
   window.addEventListener("keydown", (e) => {
     if (e.code === "KeyV" && savedCamPosition === null) {
       savedCamPosition = camera.position.clone();
-      camera.position.set(0, 1000, 0);
-      camera.lookat(0, 0, 0);
+      camera.position.set(0, 1500, 0);
+      camera.lookAt(0, 0, 0);
     }
   });
   window.addEventListener("keyup", (e) => {
@@ -204,7 +201,7 @@ function init() {
     }
   });
 
-  // --- Start rendering loop ---
+  // ─── Finally kick off the render loop ──────────────────────────────────
   animate();
 }
 
@@ -257,39 +254,37 @@ function createOrUpdatePiece(piece) {
 }
 
 function instantiateNewPiece() {
-  // raycast once at the current mouse.x/y
-  raycaster.setFromCamera(mouse, camera);
-  const floor = scene.getObjectByName("floor");
-  const hits = raycaster.intersectObject(floor, true);
-  if (!hits.length) return;
-  const hit = hits[0].point;
+  // 1) Compute a point some units in front of the camera…
+  const forward = new THREE.Vector3(0, 0, -1)
+    .applyQuaternion(camera.quaternion)
+    .normalize();
+  const spawnDistance = 50; // how far in front of you it appears
+  const spawnPos = camera.position.clone().add(forward.multiplyScalar(spawnDistance));
 
-  // generate an id and capture the index you want
+  // 2) Build the piece data
   const id = generateUniqueId();
-  const chosenIndex = currentModelIndex;
-
-  // build the action with your chosen modelIndex
-  const action = {
-    type: "add",
-    piece: {
-      id: id,
-      modelIndex: chosenIndex,
-      color: rainbowColors[chosenIndex],
-    },
-    data: {
-      position: { x: hit.x, y: hit.y, z: hit.z },
-      rotation: { x: 0, y: 0, z: 0 },
-    },
-    userId: socket.id,
-    ts: Date.now(),
+  const pieceData = {
+    id,
+    modelIndex: currentModelIndex,
+    color:      rainbowColors[currentModelIndex],
+    position:   { x: spawnPos.x, y: spawnPos.y, z: spawnPos.z },
+    rotation:   { x: 0, y: 0, z: 0 },
   };
 
-  // emit *only* — don’t render locally!
+  // 3) Emit the “add” action to everyone
+  const action = {
+    type:  "add",
+    piece: { id, modelIndex: pieceData.modelIndex, color: pieceData.color },
+    data:  { position: pieceData.position, rotation: pieceData.rotation },
+    userId: socket.id,
+    ts:     Date.now(),
+  };
   socket.emit("pieceAction", action);
 
-  // advance your local counter just for the *next* selection
-  currentModelIndex = (chosenIndex + 1) % modelLinks.length;
+  // 4) Advance your model index for the next spawn
+  currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
 }
+
 
 function updateScene() {
   // Loop through all pieces to add or update them in the scene
@@ -453,7 +448,9 @@ function animate() {
   }
   requestAnimationFrame(animate);
   // use the *global* controls here
-  controls.update(performance.now());
+  // update first‑person movement
+  const now = performance.now();
+  controls.update(now);
   renderer.render(scene, camera);
 }
 

@@ -66,6 +66,7 @@ export class FirstPersonControls {
       case "Space": this.instantiateCb(); break;
       case "KeyR":   this.rotateCb();      break;
     }
+    console.log("KeyDown:", e.code);
   }
 
   _onKeyUp(e) {
@@ -148,37 +149,40 @@ export class FirstPersonControls {
   }
 
 _handleCollisions(oldPos) {
-  // 1) Block walking through walls (static only)
+  // 1) Block static obstacles only if they’re within a small threshold
   const origin = this.camera.position.clone();
   origin.y -= this.cameraHeight;
   this.raycaster.set(origin, this._getForwardDir());
-  const wallHits = this.raycaster.intersectObjects(
-    this.scene.children.filter(o => o.userData.static),
-    true
-  );
-  if (wallHits.length) {
+
+  // gather only your walls (static meshes)
+  const staticObjs = this.scene.children.filter(o => o.userData.static);
+  const hits = this.raycaster.intersectObjects(staticObjs, true);
+
+  // only revert if the wall is VERY close (e.g. within 10 units)
+  const WALL_THRESHOLD = 10;
+  if (hits.length && hits[0].distance < WALL_THRESHOLD) {
     this.camera.position.copy(oldPos);
   }
 
-  // 2) Push dynamic pieces (root groups) via sphere‐box test
-  const pushRadius = 10;              // how far your “hand” reaches
+  // 2) Push dynamic pieces via sphere‐box intersection
+  const pushRadius = 15;
   const forward   = this._getForwardDir();
 
   this.scene.children.forEach((obj) => {
-    // only non‑static root groups
     if (obj.userData.static === false && obj.type === "Group") {
       const box     = new THREE.Box3().setFromObject(obj);
       const closest = box.clampPoint(this.camera.position, new THREE.Vector3());
       const dist    = closest.distanceTo(this.camera.position);
 
       if (dist < pushRadius) {
-        const pushAmt = (pushRadius - dist)*2;
+        const pushAmt = (pushRadius - dist);
         obj.position.add(forward.clone().multiplyScalar(pushAmt));
         if (this.onPush) this.onPush(obj.name, obj.position);
       }
     }
   });
 }
+
 
 
   setPushCallback(cb) {
