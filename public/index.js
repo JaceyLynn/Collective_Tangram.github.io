@@ -44,11 +44,11 @@ const rainbowColors = [
   "#BDC04E",
   "#13955F",
   "#088EA7",
-  "#1EB8D1",  
-  "#438ECC",  
-  "#4153A1",  
-  "#F6BCD0",  
-  "#DEDCDD",  
+  "#1EB8D1",
+  "#438ECC",
+  "#4153A1",
+  "#F6BCD0",
+  "#DEDCDD",
 ];
 let modelIndex = 0;
 let colorIndex = 0;
@@ -80,8 +80,8 @@ function init() {
     scene,
     camera,
     renderer,
-    () => instantiateNewPiece(),    // SPACE → add piece
-    () => rotateClosestPieceBy45()  // R     → rotate nearest
+    () => instantiateNewPiece(), // SPACE → add piece
+    () => rotateClosestPieceBy45() // R     → rotate nearest
   );
   // initialize its clock
   controls.prevTime = performance.now();
@@ -103,7 +103,6 @@ function init() {
   dirL.castShadow = true;
   dirL.shadow.mapSize.set(2048, 2048);
   scene.add(dirL);
-
 
   // --- Floor ---
   customTexture.wrapS = THREE.RepeatWrapping;
@@ -154,54 +153,68 @@ function init() {
     wall.userData.static = true;
     scene.add(wall);
   });
-  // ─── Floating boxes ─────────────────────────────────────────────────────────
-  // place a bunch of random BoxGeometry outside the walls and give them each
-  // a baseY + random phase so they float up/down in animate()
-  const boxCount = 100;
-  for (let i = 0; i < boxCount; i++) {
-    const size = THREE.MathUtils.randFloat(200, 400);
-    const geo  = new THREE.BoxGeometry(size, size, size);
-    const mat  = new THREE.MeshStandardMaterial({ color: bghue});
-    const box  = new THREE.Mesh(geo, mat);
+  // ─── Floating torus‑knots ──────────────────────────────────────────────────
+// clear any old
+floatingBoxes = [];
 
-    // pick a random angle & radius outside your square of halfSize
-    const radius = 3000 + 200 + Math.random() * 800;
-    const angle  = Math.random() * Math.PI * 2;
-    box.position.set(
-      Math.cos(angle) * radius,
-      THREE.MathUtils.randFloat(300, 5000),   // initial Y between 20 and 100
-      Math.sin(angle) * radius
-    );
+// floor dimensions (must match your PlaneGeometry)
+const floorSize  = 3500;
+const halfFloor  = floorSize / 2;
 
-    // store for animation
-    box.userData.baseY = box.position.y;
-    box.userData.phase = Math.random() * Math.PI * 2;
+const knotCount = 150;
+for (let i = 0; i < knotCount; i++) {
+  // random p & q
+  const p = THREE.MathUtils.randInt(2, 10);
+  const q = THREE.MathUtils.randInt(2, 10);
 
-    floatingBoxes.push(box);
-    scene.add(box);
-  }
-// 1) Query the AIC API for exactly as many images as boxes
-getArt("Color blocking", floatingBoxes.length)
-  .then((arts) => {
-    // 2) For each result, load the texture and apply it to that box
-    const count = Math.min(arts.length, floatingBoxes.length);
-    for (let i = 0; i < count; i++) {
-      const { imageUrl, title, artist } = arts[i];
-      const box = floatingBoxes[i];
+  // random size
+  const radius    = THREE.MathUtils.randFloat(100, 60);
+  const tube      = radius * 0.3;
+  const geometry  = new THREE.TorusKnotGeometry(
+    radius, tube, 100, 16, p, q
+  );
+  const material  = new THREE.MeshStandardMaterial({ color: 0xffffff });
+  const knot      = new THREE.Mesh(geometry, material);
 
-      // swap its material to use the fetched image
-      const tex = new THREE.TextureLoader().load(imageUrl);
-      box.material = new THREE.MeshStandardMaterial({
-        map: tex,
-        roughness: 0.8,
-        metalness: 0.2,
-      });
+  // place outside the walls
+  const spawnRadius = halfFloor + 200 + Math.random() * 800;
+  const angle       = Math.random() * Math.PI * 2;
+  knot.position.set(
+    Math.cos(angle) * spawnRadius,
+    THREE.MathUtils.randFloat(300, 5000), // some height
+    Math.sin(angle) * spawnRadius
+  );
 
-      // optional: store the metadata on the box for hover/tooltips later
-      box.userData.artInfo = { title, artist };
-    }
-  })
-  .catch((err) => console.error("Failed to load art:", err));
+  // for bobbing
+  knot.userData.baseY = knot.position.y;
+  knot.userData.phase = Math.random() * Math.PI * 2;
+
+  floatingBoxes.push(knot);
+  scene.add(knot);
+}
+
+  // 1) Query the AIC API for exactly as many images as boxes
+  getArt("Color blocking", floatingBoxes.length)
+    .then((arts) => {
+      // 2) For each result, load the texture and apply it to that box
+      const count = Math.min(arts.length, floatingBoxes.length);
+      for (let i = 0; i < count; i++) {
+        const { imageUrl, title, artist } = arts[i];
+        const box = floatingBoxes[i];
+
+        // swap its material to use the fetched image
+        const tex = new THREE.TextureLoader().load(imageUrl);
+        box.material = new THREE.MeshStandardMaterial({
+          map: tex,
+          roughness: 0.8,
+          metalness: 0.2,
+        });
+
+        // optional: store the metadata on the box for hover/tooltips later
+        box.userData.artInfo = { title, artist };
+      }
+    })
+    .catch((err) => console.error("Failed to load art:", err));
   // --- Model links array ---
   modelLinks = [
     "https://cdn.glitch.global/7b5f2fec-1afb-4043-bb5a-0a568ef51f86/tangram_1.glb?v=1740980622181", // Model 2 (Red)
@@ -242,7 +255,7 @@ getArt("Color blocking", floatingBoxes.length)
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
   });
 
-// ─── “Bird’s‑eye” V‑key handlers ────────────────────────────────────────
+  // ─── “Bird’s‑eye” V‑key handlers ────────────────────────────────────────
   window.addEventListener("keydown", (e) => {
     if (e.code === "KeyV" && savedCamPosition === null) {
       savedCamPosition = camera.position.clone();
@@ -314,56 +327,55 @@ function instantiateNewPiece() {
   const forward = new THREE.Vector3(0, 0, -1)
     .applyQuaternion(camera.quaternion)
     .normalize();
-  const spawnDistance = 50; 
-  const rawXZ = camera.position.clone()
+  const spawnDistance = 50;
+  const rawXZ = camera.position
+    .clone()
     .add(forward.multiplyScalar(spawnDistance));
 
   // 2) Ray down from high above that X/Z to find the floor
   const downOrigin = new THREE.Vector3(rawXZ.x, 1000, rawXZ.z);
   raycaster.set(downOrigin, new THREE.Vector3(0, -1, 0));
   const floor = scene.getObjectByName("floor");
-  const hits  = raycaster.intersectObject(floor, true);
+  const hits = raycaster.intersectObject(floor, true);
   if (!hits.length) {
     console.warn("instantiateNewPiece: no floor hit at", rawXZ.x, rawXZ.z);
     return;
   }
-  const spawnPos = hits[0].point;  // { x, y=0, z }
+  const spawnPos = hits[0].point; // { x, y=0, z }
 
   // 3) Build the piece data at that ground position
   const id = generateUniqueId();
 
-// on Space press:
-modelIndex = (modelIndex + 1) % modelLinks.length;
-colorIndex = (colorIndex + 1) % rainbowColors.length;
+  // on Space press:
+  modelIndex = (modelIndex + 1) % modelLinks.length;
+  colorIndex = (colorIndex + 1) % rainbowColors.length;
   const pieceData = {
     id,
     modelIndex: modelIndex,
-    color:      rainbowColors[colorIndex],
-    position:   { x: spawnPos.x, y: spawnPos.y, z: spawnPos.z },
-    rotation:   { x: 0, y: 0, z: 0 },
+    color: rainbowColors[colorIndex],
+    position: { x: spawnPos.x, y: spawnPos.y, z: spawnPos.z },
+    rotation: { x: 0, y: 0, z: 0 },
   };
 
   // 4) Emit the add event
   socket.emit("pieceAction", {
-    type:  "add",
+    type: "add",
     piece: {
-      id:         pieceData.id,
+      id: pieceData.id,
       modelIndex: pieceData.modelIndex,
-      color:      pieceData.color,
+      color: pieceData.color,
     },
     data: {
       position: pieceData.position,
       rotation: pieceData.rotation,
     },
     userId: socket.id,
-    ts:     Date.now(),
+    ts: Date.now(),
   });
 
   // 5) Cycle to the next model/color for the *next* spawn
   currentModelIndex = (currentModelIndex + 1) % modelLinks.length;
 }
-
-
 
 function updateScene() {
   // Loop through all pieces to add or update them in the scene
@@ -434,15 +446,15 @@ function rotateClosestPieceBy45() {
   if (!closest) return;
 
   // 2) Compute start & end angles on the group's Y rotation
-  const startY    = closest.rotation.y;
-  const endY      = startY + THREE.MathUtils.degToRad(45);
-  const duration  = 300;       // ms
-  const t0        = performance.now();
+  const startY = closest.rotation.y;
+  const endY = startY + THREE.MathUtils.degToRad(45);
+  const duration = 300; // ms
+  const t0 = performance.now();
 
   function tick(now) {
     const t = Math.min((now - t0) / duration, 1);
     // simple ease‑in‑out
-    const eased = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
+    const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
     closest.rotation.y = THREE.MathUtils.lerp(startY, endY, eased);
 
     if (t < 1) {
@@ -457,7 +469,7 @@ function rotateClosestPieceBy45() {
             x: closest.rotation.x,
             y: closest.rotation.y,
             z: closest.rotation.z,
-          }
+          },
         },
         userId: socket.id,
         ts: Date.now(),
@@ -534,23 +546,24 @@ function animate() {
   // 1) update controls / movement
   const now = performance.now();
   controls.update(now);
-  
-    // ─── Float the boxes up & down ─────────────────────────────────────────────
-  const t1 = now * 0.002;  // tweak speed here
-  floatingBoxes.forEach((box) => {
-    box.position.y = box.userData.baseY
-      + Math.sin(t1 + box.userData.phase) * 20;  // 20 = amplitude
+
+  // ─── Float the knot up & down ─────────────────────────────────────────────
+  // in animate(), after controls.update(now):
+  const t = now * 0.002;
+  floatingBoxes.forEach((knot) => {
+    knot.position.y =
+      knot.userData.baseY + Math.sin(t + knot.userData.phase) * 20;
   });
 
   // 2) compute a hue from camera position (or time)
   //    here we mix both for effect:
-  const t2 = (now * 0.00005) % 1;        // slow time‑based shift
-  const p = (camera.position.x + camera.position.z) * 0.0002; 
+  const t2 = (now * 0.00005) % 1; // slow time‑based shift
+  const p = (camera.position.x + camera.position.z) * 0.0002;
   //    normalize camera x+z into roughly 0–1
-  bghue = (t2 + p) * 0.5;            // blend time & position
+  bghue = (t2 + p) * 0.5; // blend time & position
 
   // 3) apply it
-  scene.background = hueColor(bghue );
+  scene.background = hueColor(bghue);
   renderer.render(scene, camera);
 }
 
