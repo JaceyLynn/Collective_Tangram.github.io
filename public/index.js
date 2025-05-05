@@ -449,6 +449,9 @@ function fadeOutTrail() {
   });
   trails = [];
 }
+function hueColor(h) {
+  return new THREE.Color().setHSL(h % 1, 0.5, 0.5);
+}
 
 function animate() {
   if (dragging) {
@@ -469,10 +472,19 @@ function animate() {
     }
   }
   requestAnimationFrame(animate);
-  // use the *global* controls here
-  // update first‑person movement
+  // 1) update controls / movement
   const now = performance.now();
   controls.update(now);
+
+  // 2) compute a hue from camera position (or time)
+  //    here we mix both for effect:
+  const t = (now * 0.00005) % 1;        // slow time‑based shift
+  const p = (camera.position.x + camera.position.z) * 0.0002; 
+  //    normalize camera x+z into roughly 0–1
+  const hue = (t + p) * 0.5;            // blend time & position
+
+  // 3) apply it
+  scene.background = hueColor(hue);
   renderer.render(scene, camera);
 }
 

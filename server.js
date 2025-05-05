@@ -70,6 +70,7 @@ mongoose.connection.once("open", async () => {
       static: true, // ← mark as non‑draggable
       lastModifiedBy: "system",
       ts: new Date(),
+      static: true,
     }));
     await Piece.insertMany(templates);
     docs = templates;
@@ -85,7 +86,7 @@ mongoose.connection.once("open", async () => {
     static: Boolean(doc.static),
   }));
 
-  // seed templates if DB was empty
+  // seed templates if DB was empty!!!!!
   if (pieces.length === 0) {
     const templates = rainbowColors.map((color, idx) => ({
       _id: `template-${idx}`,
