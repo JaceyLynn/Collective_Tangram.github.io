@@ -358,11 +358,12 @@ function updateScene() {
   });
 }
 function rotateClosestPieceBy45() {
-  // 1) find the closest dynamic piece
+  // 1) Find the nearest dynamic piece *group* (root has .type === 'Group' and .name === piece.id)
   let closest = null;
   let minDist = Infinity;
-  scene.traverse((obj) => {
-    if (obj.isMesh && obj.userData.static === false) {
+
+  scene.children.forEach((obj) => {
+    if (obj.type === "Group" && obj.userData.static === false) {
       const d = obj.position.distanceTo(camera.position);
       if (d < minDist) {
         minDist = d;
@@ -370,24 +371,25 @@ function rotateClosestPieceBy45() {
       }
     }
   });
+
   if (!closest) return;
 
-  // 2) prepare for smooth tween from current to +45°
-  const startAngle = closest.rotation.y;
-  const endAngle = startAngle + THREE.MathUtils.degToRad(45);
-  const duration = 300; // ms
-  const t0 = performance.now();
+  // 2) Compute start & end angles on the group's Y rotation
+  const startY    = closest.rotation.y;
+  const endY      = startY + THREE.MathUtils.degToRad(45);
+  const duration  = 300;       // ms
+  const t0        = performance.now();
 
   function tick(now) {
     const t = Math.min((now - t0) / duration, 1);
-    // ease‐in‐out
-    const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    closest.rotation.y = THREE.MathUtils.lerp(startAngle, endAngle, eased);
+    // simple ease‑in‑out
+    const eased = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
+    closest.rotation.y = THREE.MathUtils.lerp(startY, endY, eased);
 
     if (t < 1) {
       requestAnimationFrame(tick);
     } else {
-      // 3) when done, notify the server of the new rotation
+      // 3) Once done, notify everyone of the new rotation
       socket.emit("pieceAction", {
         type: "rotate",
         piece: { id: closest.name },
@@ -396,7 +398,7 @@ function rotateClosestPieceBy45() {
             x: closest.rotation.x,
             y: closest.rotation.y,
             z: closest.rotation.z,
-          },
+          }
         },
         userId: socket.id,
         ts: Date.now(),

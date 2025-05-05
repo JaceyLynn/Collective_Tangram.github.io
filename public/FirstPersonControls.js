@@ -23,7 +23,7 @@ export class FirstPersonControls {
     // Look state
     this.lat       = 0;        // pitch in degrees
     this.lon       = 0;        // yaw in degrees
-    this.lookSpeed = 0.1;      // deg per pixel
+    this.lookSpeed = 0.3;      // deg per pixel
     this.euler     = new THREE.Euler(0, 0, 0, "YXZ");
     this.isLocked  = false;
 
@@ -104,7 +104,7 @@ export class FirstPersonControls {
     this.direction.x = (this.moveRight    ? 1 : 0) - (this.moveLeft     ? 1 : 0);
     this.direction.normalize();
 
-    const speed = 200;
+    const speed = 1000;
     if (this.direction.z) this.velocity.z -= this.direction.z * speed * delta;
     if (this.direction.x) this.velocity.x -= this.direction.x * speed * delta;
 
