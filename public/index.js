@@ -34,7 +34,7 @@ const textureLoader = new THREE.TextureLoader();
 const customTexture = textureLoader.load(
   "https://cdn.glitch.global/9e349498-62d1-4bcc-bd1c-bbf3a5b4ac51/tangram%20pattern%20wood.png?v=1746398807476"
 );
-
+let bghue;
 // puzzle colors
 const rainbowColors = [
   "#D4A29C",
@@ -161,7 +161,7 @@ function init() {
   for (let i = 0; i < boxCount; i++) {
     const size = THREE.MathUtils.randFloat(200, 400);
     const geo  = new THREE.BoxGeometry(size, size, size);
-    const mat  = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const mat  = new THREE.MeshStandardMaterial({ color: bghue});
     const box  = new THREE.Mesh(geo, mat);
 
     // pick a random angle & radius outside your square of halfSize
@@ -181,7 +181,7 @@ function init() {
     scene.add(box);
   }
 // 1) Query the AIC API for exactly as many images as boxes
-getArt("geometric painting", floatingBoxes.length)
+getArt("Color blocking", floatingBoxes.length)
   .then((arts) => {
     // 2) For each result, load the texture and apply it to that box
     const count = Math.min(arts.length, floatingBoxes.length);
@@ -547,10 +547,10 @@ function animate() {
   const t2 = (now * 0.00005) % 1;        // slow time‑based shift
   const p = (camera.position.x + camera.position.z) * 0.0002; 
   //    normalize camera x+z into roughly 0–1
-  const hue = (t2 + p) * 0.5;            // blend time & position
+  bghue = (t2 + p) * 0.5;            // blend time & position
 
   // 3) apply it
-  scene.background = hueColor(hue);
+  scene.background = hueColor(bghue );
   renderer.render(scene, camera);
 }
 
