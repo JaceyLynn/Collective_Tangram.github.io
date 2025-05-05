@@ -98,7 +98,7 @@ export class FirstPersonControls {
   _onPointerMove(event) {
     if (!this.isUserInteracting) return;
     // scale these to taste
-    const movementSpeed = 0.5;
+    const movementSpeed = 0.9;
     this.lon = (this.onPointerDownPointerX - event.clientX) * movementSpeed + this.onPointerDownLon;
     this.lat = (event.clientY - this.onPointerDownPointerY) * movementSpeed + this.onPointerDownLat;
     this.computeCameraOrientation();
