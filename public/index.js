@@ -44,7 +44,15 @@ const rainbowColors = [
   "#B0E1E3",
   "#97ADF6",
   "#C6A0D4",
+  "#FF6F61",  // coral
+  "#6B5B95",  // deep purple
+  "#88B04B",  // green
+  "#F7CAC9",  // pink
+  "#92A8D1",  // light blue
 ];
+let modelIndex = 0;
+let colorIndex = 0;
+
 function init() {
   // ─── Basic three.js setup ───────────────────────────────────────────────
   scene = new THREE.Scene();
@@ -151,7 +159,7 @@ function init() {
   // a baseY + random phase so they float up/down in animate()
   const boxCount = 100;
   for (let i = 0; i < boxCount; i++) {
-    const size = THREE.MathUtils.randFloat(200, 600);
+    const size = THREE.MathUtils.randFloat(200, 400);
     const geo  = new THREE.BoxGeometry(size, size, size);
     const mat  = new THREE.MeshStandardMaterial({ color: 0xffffff });
     const box  = new THREE.Mesh(geo, mat);
@@ -173,7 +181,7 @@ function init() {
     scene.add(box);
   }
 // 1) Query the AIC API for exactly as many images as boxes
-getArt("geometric composition", floatingBoxes.length)
+getArt("geometric painting", floatingBoxes.length)
   .then((arts) => {
     // 2) For each result, load the texture and apply it to that box
     const count = Math.min(arts.length, floatingBoxes.length);
@@ -323,11 +331,14 @@ function instantiateNewPiece() {
 
   // 3) Build the piece data at that ground position
   const id = generateUniqueId();
-  const idx = currentModelIndex;
+
+// on Space press:
+modelIndex = (modelIndex + 1) % modelLinks.length;
+colorIndex = (colorIndex + 1) % rainbowColors.length;
   const pieceData = {
     id,
-    modelIndex: idx,
-    color:      rainbowColors[idx],
+    modelIndex: modelIndex,
+    color:      rainbowColors[colorIndex],
     position:   { x: spawnPos.x, y: spawnPos.y, z: spawnPos.z },
     rotation:   { x: 0, y: 0, z: 0 },
   };
