@@ -29,6 +29,12 @@ let savedCamPosition = null;
 let frameCounts = 0;
 let controls;
 let floatingBoxes = [];
+
+// At the top of your file
+let savedCamPosition = null;
+let savedCamLat = null;
+let savedCamLon = null;
+
 // Load PLANE texture
 const textureLoader = new THREE.TextureLoader();
 const customTexture = textureLoader.load(
