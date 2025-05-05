@@ -1,7 +1,7 @@
 import * as THREE from "three";
 // import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { FirstPersonControls } from "/FirstPersonControls.js";
+import { FirstPersonControls } from "./FirstPersonControls.js";
 
 let socket;
 // Generate a unique ID for each new piece
@@ -236,13 +236,13 @@ scene.add(westWall);
 
 // Function to create or update pieces in the scene
 function createOrUpdatePiece(piece) {
-  // If it’s already in the scene, just update its transform
-  let existing = scene.getObjectByName(piece.id);
-  if (existing) {
-    existing.position.set(piece.position.x, piece.position.y, piece.position.z);
-    existing.rotation.set(piece.rotation.x, piece.rotation.y, piece.rotation.z);
-    return;
-  }
+  const idx = (Number.isInteger(piece.modelIndex) &&
+               piece.modelIndex >= 0 &&
+               piece.modelIndex < modelLinks.length)
+    ? piece.modelIndex
+    : 0;
+  const url = modelLinks[idx];
+  if (!url) { console.warn("Bad modelIndex:", piece.modelIndex); return; }
 
   // Otherwise, load it for the first time
   const loader = new GLTFLoader();

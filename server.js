@@ -8,6 +8,7 @@ const mongoose = require("mongoose");
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+app.use(express.static('public')); 
 
 // 2) Mongoose schemas & models
 const { Schema, model } = mongoose;
