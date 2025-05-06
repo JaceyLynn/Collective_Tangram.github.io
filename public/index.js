@@ -29,6 +29,7 @@ let savedCamPosition = null;
 let frameCounts = 0;
 let controls;
 let floatingBoxes = [];
+let miniMapCamera, miniMapDot;
 
 // At the top of your file
 let savedCamLat = null;
@@ -266,10 +267,10 @@ function init() {
   // --- Socket.io setup ---
   socket = io({ transports: ["websocket"] });
   socket.on("connect", () => console.log("Connected, socket id:", socket.id));
-socket.on("playerCount", (count) => {
-  const el = document.getElementById("player-count");
-  if (el) el.textContent = `Players: ${count}`;
-});
+  socket.on("playerCount", (count) => {
+    const el = document.getElementById("player-count");
+    if (el) el.textContent = `Players: ${count}`;
+  });
   socket.on("initialize", (existing) => {
     pieces = existing;
     pieces.forEach(createOrUpdatePiece);
@@ -294,6 +295,29 @@ socket.on("playerCount", (count) => {
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
   });
+  // ─── Minimap setup ────────────────────────────────────────────────────────
+
+  // 1) create an orthographic camera that covers the full floor
+  const mapSize = 3500; // must match your PlaneGeometry width/height
+  const halfMap = mapSize / 2;
+  miniMapCamera = new THREE.OrthographicCamera(
+    -halfMap,
+    halfMap,
+    halfMap,
+    -halfMap,
+    0.1,
+    5000
+  );
+  miniMapCamera.position.set(0, 2000, 0); // very high above
+  miniMapCamera.up.set(0, 0, -1); // orient so +Z is up on the map
+  miniMapCamera.lookAt(0, 0, 0);
+
+  // 2) a small sprite/dot that shows your player position
+  const dotGeo = new THREE.CircleGeometry(20, 16);
+  const dotMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  miniMapDot = new THREE.Mesh(dotGeo, dotMat);
+  miniMapDot.rotation.x = -Math.PI / 2; // face up
+  scene.add(miniMapDot);
 
   // ─── “Bird’s‑eye” V‑key handlers ────────────────────────────────────────
   // Bird’s‑eye handlers:
@@ -594,10 +618,12 @@ function hueColor(h) {
 }
 
 function animate() {
+  requestAnimationFrame(animate);
+
+  // 1) Drag / rotate debug (optional)
   if (dragging) {
     console.log("Dragging is active! Object should be moving.");
   }
-
   if (isRotating && pickedObject) {
     let center = pickedObject.userData.rotationCenter;
 
@@ -611,36 +637,61 @@ function animate() {
       tempPosition.add(center);
     }
   }
-  requestAnimationFrame(animate);
-  // 1) update controls / movement
-  const now = performance.now();
-  controls.update(now);
-  const delta = (now - controls.prevTime) / 1000;
-  // ─── Float the knot up & down ─────────────────────────────────────────────
 
-  // float them up/down
+  // 2) Update controls & get delta time
+  const now = performance.now();
+  const delta = (now - controls.prevTime) / 1000;
+  controls.update(now);
+
+  // 3) Float & spin knots
   const t = now * 0.002;
   floatingBoxes.forEach((knot) => {
+    // bob up/down
     knot.position.y =
       knot.userData.baseY + Math.sin(t + knot.userData.phase) * 20;
-
-    // 3) apply their per‑knot spin:
+    // spin
     const rv = knot.userData.rotVelocity;
     knot.rotation.x += rv.x * delta;
     knot.rotation.y += rv.y * delta;
     knot.rotation.z += rv.z * delta;
   });
 
-  // 2) compute a hue from camera position (or time)
-  //    here we mix both for effect:
-  const t2 = (now * 0.00005) % 1; // slow time‑based shift
-  const p = (camera.position.x + camera.position.z) * 0.0002;
-  //    normalize camera x+z into roughly 0–1
-  bghue = (t2 + p) * 0.5; // blend time & position
+  // 4) Dynamic background hue
+  const timeHue = (now * 0.00005) % 1;
+  const posHue = (camera.position.x + camera.position.z) * 0.0002;
+  const hue = (timeHue + posHue) * 0.5;
+  scene.background = hueColor(hue);
 
-  // 3) apply it
-  scene.background = hueColor(bghue);
+  // 5) Main full‑screen render
+  renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+  renderer.setScissorTest(false);
   renderer.render(scene, camera);
+
+  // 6) Update minimap dot position
+  miniMapDot.position.set(camera.position.x, 2, camera.position.z);
+
+  // 7) Render minimap in top‑right
+  const mapSize = 200;
+  const margin = 10;
+  renderer.clearDepth();
+  renderer.setScissorTest(true);
+  renderer.setScissor(
+    window.innerWidth - mapSize - margin,
+    window.innerHeight - mapSize - margin,
+    mapSize,
+    mapSize
+  );
+  renderer.setViewport(
+    window.innerWidth - mapSize - margin,
+    window.innerHeight - mapSize - margin,
+    mapSize,
+    mapSize
+  );
+  renderer.render(scene, miniMapCamera);
+  renderer.setScissorTest(false);
+
+  // 8) Prepare for next frame
+  controls.prevTime = now;
 }
 
 init();
