@@ -266,7 +266,10 @@ function init() {
   // --- Socket.io setup ---
   socket = io({ transports: ["websocket"] });
   socket.on("connect", () => console.log("Connected, socket id:", socket.id));
-
+socket.on("playerCount", (count) => {
+  const el = document.getElementById("player-count");
+  if (el) el.textContent = `Players: ${count}`;
+});
   socket.on("initialize", (existing) => {
     pieces = existing;
     pieces.forEach(createOrUpdatePiece);

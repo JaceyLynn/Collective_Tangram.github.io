@@ -110,7 +110,7 @@ mongoose.connection.once("open", async () => {
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
     playerInstantiations[socket.id] = 0;
-
+    io.emit("playerCount", io.engine.clientsCount);
     // 1. Send the full board (templates + any added pieces)
     socket.emit("initialize", pieces);
 
@@ -178,6 +178,7 @@ mongoose.connection.once("open", async () => {
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);
       delete playerInstantiations[socket.id];
+      io.emit("playerCount", io.engine.clientsCount);
     });
   });
 
