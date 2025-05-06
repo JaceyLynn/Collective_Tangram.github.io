@@ -38,13 +38,13 @@ let pieces = []; // in‑memory copy
 let playerInstantiations = {};
 let currentModelIndex = 0;
 const rainbowColors = [
-  "#D4A29C",
-  "#E8B298",
-  "#FDE8B3",
-  "#BDE1B3",
-  "#B0E1E3",
-  "#97ADF6",
-  "#C6A0D4",
+  "#13955F",
+  "#088EA7",
+  "#1EB8D1",
+  "#438ECC",
+  "#4153A1",
+  "#F6BCD0",
+  "#DEDCDD",
 ];
 
 // 4) Connect to MongoDB

@@ -195,7 +195,7 @@ function init() {
     const q = THREE.MathUtils.randInt(2, 10);
 
     // random size
-    const radius = THREE.MathUtils.randFloat(20, 200);
+    const radius = THREE.MathUtils.randFloat(50, 250);
     const tube = radius * 0.3;
     const geometry = new THREE.TorusKnotGeometry(radius, tube, 100, 16, p, q);
     const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
@@ -206,7 +206,7 @@ function init() {
     const angle = Math.random() * Math.PI * 2;
     knot.position.set(
       Math.cos(angle) * spawnRadius,
-      THREE.MathUtils.randFloat(300, 4000), // some height
+      THREE.MathUtils.randFloat(200, 5000), // height range
       Math.sin(angle) * spawnRadius
     );
 
