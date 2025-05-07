@@ -196,10 +196,10 @@ function init() {
     const q = THREE.MathUtils.randInt(2, 10);
 
     // random size
-    const radius = THREE.MathUtils.randFloat(50, 250);
+    const radius = THREE.MathUtils.randFloat(60, 300);
     const tube = radius * 0.3;
     const geometry = new THREE.TorusKnotGeometry(radius, tube, 100, 16, p, q);
-    const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const material = new THREE.MeshStandardMaterial({ color: "#FFCC33" });
     const knot = new THREE.Mesh(geometry, material);
 
     // place outside the walls
@@ -313,8 +313,8 @@ function init() {
   miniMapCamera.lookAt(0, 0, 0);
 
   // 2) a small sprite/dot that shows your player position
-  const dotGeo = new THREE.CircleGeometry(20, 16);
-  const dotMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const dotGeo = new THREE.CircleGeometry(40, 16);
+  const dotMat = new THREE.MeshBasicMaterial({ color: "#ffffff" });
   miniMapDot = new THREE.Mesh(dotGeo, dotMat);
   miniMapDot.rotation.x = -Math.PI / 2; // face up
   scene.add(miniMapDot);
