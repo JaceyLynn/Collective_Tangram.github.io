@@ -183,7 +183,7 @@ function init() {
     scene.add(wall);
   });
   let bgtexture = textureLoader.load(
-    "https://cdn.glitch.global/95ee0769-1fe7-4f34-ae5f-4ad5dededbeb/Screenshot%202025-05-06%20at%208.38.36%E2%80%AFPM.png?v=1746580247082"
+    "https://cdn.glitch.global/95ee0769-1fe7-4f34-ae5f-4ad5dededbeb/IMG_0191.PNG?v=1746582318856"
   );
   bgtexture.mapping = THREE.EquirectangularReflectionMapping;
   scene.background = bgtexture;;
@@ -239,7 +239,7 @@ function init() {
   }
 
   // 1) Query the AIC API for exactly as many images as boxes
-  getArt("Color blocking", floatingBoxes.length)
+  getArt("painting", floatingBoxes.length)
     .then((arts) => {
       // 2) For each result, load the texture and apply it to that box
       const count = Math.min(arts.length, floatingBoxes.length);
