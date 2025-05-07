@@ -183,7 +183,7 @@ function init() {
     scene.add(wall);
   });
   let bgtexture = textureLoader.load(
-    "https://cdn.glitch.global/95ee0769-1fe7-4f34-ae5f-4ad5dededbeb/Screenshot%202025-05-06%20at%208.38.36%E2%80%AFPM.png?v=1746579406867"
+    "https://cdn.glitch.global/95ee0769-1fe7-4f34-ae5f-4ad5dededbeb/Screenshot%202025-05-06%20at%208.38.36%E2%80%AFPM.png?v=1746580247082"
   );
   bgtexture.mapping = THREE.EquirectangularReflectionMapping;
   scene.background = bgtexture;;
