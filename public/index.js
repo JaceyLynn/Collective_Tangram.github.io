@@ -183,7 +183,7 @@ function init() {
     scene.add(wall);
   });
   let bgtexture = textureLoader.load(
-    "https://cdn.glitch.global/95ee0769-1fe7-4f34-ae5f-4ad5dededbeb/IMG_0191.PNG?v=1746582318856"
+    "https://cdn.glitch.global/95ee0769-1fe7-4f34-ae5f-4ad5dededbeb/IMG_01913.jpg?v=1746583936721"
   );
   bgtexture.mapping = THREE.EquirectangularReflectionMapping;
   scene.background = bgtexture;;
@@ -214,7 +214,7 @@ function init() {
     const angle = Math.random() * Math.PI * 2;
     knot.position.set(
       Math.cos(angle) * spawnRadius,
-      THREE.MathUtils.randFloat(200, 5000), // height range
+      THREE.MathUtils.randFloat(200, 6000), // height range
       Math.sin(angle) * spawnRadius
     );
 
