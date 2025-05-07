@@ -125,13 +125,13 @@ function init() {
   makeDirLight(0x00ffff, d, h, 0, 2);
 
   // Magenta light from -X (West)
-  makeDirLight(0xff00ff, -d, h, 0, 1.0);
+  makeDirLight(0xff00ff, -d, h, 0, 1.5);
 
   // Yellow light from +Z (South)
   makeDirLight(0xffff00, 0, h, d, 2);
 
   // Green light from -Z (North)
-  makeDirLight(0x00ff00, 0, h, -d, 1.5);
+  makeDirLight(0x00ff00, 0, h, -d, 1.0);
 
   // --- Floor ---
   customTexture.wrapS = THREE.RepeatWrapping;
