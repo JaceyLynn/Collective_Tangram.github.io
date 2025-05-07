@@ -62,7 +62,7 @@ let colorIndex = 0;
 function init() {
   // ─── Basic three.js setup ───────────────────────────────────────────────
   scene = new THREE.Scene();
-  scene.background = new THREE.Color("#404040");
+  // scene.background = new THREE.Color("#404040");
 
   camera = new THREE.PerspectiveCamera(
     75,
@@ -182,6 +182,13 @@ function init() {
     wall.userData.static = true;
     scene.add(wall);
   });
+  let bgtexture = textureLoader.load(
+    "https://cdn.glitch.global/95ee0769-1fe7-4f34-ae5f-4ad5dededbeb/Screenshot%202025-05-06%20at%208.38.36%E2%80%AFPM.png?v=1746579406867"
+  );
+  bgtexture.mapping = THREE.EquirectangularReflectionMapping;
+  scene.background = bgtexture;;
+
+
   // ─── Floating torus‑knots ──────────────────────────────────────────────────
   // clear any old
   floatingBoxes = [];
@@ -656,11 +663,11 @@ function animate() {
     knot.rotation.z += rv.z * delta;
   });
 
-  // 4) Dynamic background hue
-  const timeHue = (now * 0.00005) % 1;
-  const posHue = (camera.position.x + camera.position.z) * 0.0002;
-  const hue = (timeHue + posHue) * 0.5;
-  scene.background = hueColor(hue);
+  // // 4) Dynamic background hue
+  // const timeHue = (now * 0.00005) % 1;
+  // const posHue = (camera.position.x + camera.position.z) * 0.0002;
+  // const hue = (timeHue + posHue) * 0.5;
+  // scene.background = hueColor(hue);
 
   // 5) Main full‑screen render
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
