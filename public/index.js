@@ -206,7 +206,7 @@ function init() {
     const radius = THREE.MathUtils.randFloat(60, 300);
     const tube = radius * 0.3;
     const geometry = new THREE.TorusKnotGeometry(radius, tube, 100, 16, p, q);
-    const material = new THREE.MeshStandardMaterial({ color: "#FFCC33" });
+    const material = new THREE.MeshStandardMaterial({ color: "#f3aca1" });
     const knot = new THREE.Mesh(geometry, material);
 
     // place outside the walls
